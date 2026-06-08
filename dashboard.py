@@ -1,14 +1,16 @@
-import os
-import json
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 from bs4 import BeautifulSoup
+import requests
+import io
+
 
 # -----------------------------
 # CONFIG
 # -----------------------------
-FOLDER = r"C:\data\Uni\projekte\Truppach\Troll_Data\html"
+PARQUET_URL = "https://.../data.parquet?download=1"
+#FOLDER = r"C:\data\Uni\projekte\Truppach\Troll_Data\html"
 DATA_FILE = "data.parquet"
 INDEX_FILE = "processed_files.json"
 
@@ -95,62 +97,29 @@ def parse_html(file_path):
 # -----------------------------
 # LOAD
 # -----------------------------
-def load_data_incremental(folder):
-    if os.path.exists(INDEX_FILE):
-        with open(INDEX_FILE, "r") as f:
-            processed_files = set(json.load(f))
-    else:
-        processed_files = set()
-
-    new_data = []
-    all_files = [f for f in os.listdir(folder) if f.endswith(".html")]
-
-    for file in all_files:
-        if file in processed_files:
-            continue
-
-        path = os.path.join(folder, file)
-        df = parse_html(path)
-
-        if df is not None and not df.empty:
-            new_data.append(df)
-
-        processed_files.add(file)
-
-    if new_data:
-        new_df = pd.concat(new_data, ignore_index=True)
-
-        if os.path.exists(DATA_FILE):
-            old_df = pd.read_parquet(DATA_FILE)
-            df = pd.concat([old_df, new_df], ignore_index=True)
-        else:
-            df = new_df
-
-        df.to_parquet(DATA_FILE, index=False)
-
-        with open(INDEX_FILE, "w") as f:
-            json.dump(list(processed_files), f)
-
-    if os.path.exists(DATA_FILE):
-        df = pd.read_parquet(DATA_FILE)
-    else:
+@st.cache_data
+def load_data():
+    try:
+        r = requests.get(PARQUET_URL)
+        r.raise_for_status()
+    except Exception as e:
+        st.error(f"Fehler beim Laden der Daten: {e}")
         return None
 
+    df = pd.read_parquet(io.BytesIO(r.content))
+
     df["time"] = pd.to_datetime(df["time"], errors="coerce")
+
     return df
 
-@st.cache_data
-def get_data(folder):
-    return load_data_incremental(folder)
+
+df = load_data()
 
 # -----------------------------
 # RESET
 # -----------------------------
-if st.sidebar.button("♻️ Cache zurücksetzen"):
-    if os.path.exists(DATA_FILE):
-        os.remove(DATA_FILE)
-    if os.path.exists(INDEX_FILE):
-        os.remove(INDEX_FILE)
+if st.sidebar.button("🔄 Daten neu laden"):
+    st.cache_data.clear()
     st.rerun()
 
 # -----------------------------
