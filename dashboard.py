@@ -125,7 +125,7 @@ if st.sidebar.button("🔄 Daten neu laden"):
 # -----------------------------
 # LOAD DATA
 # -----------------------------
-df = get_data(FOLDER)
+df = load_data()
 
 if df is None or df.empty:
     st.error("❌ Keine Daten gefunden")
