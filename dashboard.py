@@ -9,7 +9,7 @@ import io
 # -----------------------------
 # CONFIG
 # -----------------------------
-PARQUET_URL = "https://.../data.parquet?download=1"
+PARQUET_URL = "https://github.com/jogoetz/truppach-dashboard/raw/refs/heads/main/data.parquet"
 #FOLDER = r"C:\data\Uni\projekte\Truppach\Troll_Data\html"
 DATA_FILE = "data.parquet"
 INDEX_FILE = "processed_files.json"
