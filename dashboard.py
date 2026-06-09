@@ -268,13 +268,11 @@ st.subheader("🗺️ Messstationen")
 fig_map = go.Figure()
 
 fig_map.add_trace(go.Scattermapbox(
-    lat=map_df["lat"],
-    lon=map_df["lon"],
-    mode="markers+text",
-    text=map_df["station"],
-    textposition="top center",
+    lat=map_df["lat"].astype(float),
+    lon=map_df["lon"].astype(float),
+    mode="markers",
     marker=dict(
-        size=12,
+        size=14,
         color=[color_map.get(s, "#888888") for s in map_df["station"]],
     ),
     customdata=map_df["station"],
@@ -285,14 +283,19 @@ fig_map.update_layout(
     mapbox_style="open-street-map",
     mapbox_zoom=11,
     mapbox_center=dict(
-        lat=map_df["lat"].mean(),
-        lon=map_df["lon"].mean()
+        lat=float(map_df["lat"].mean()),
+        lon=float(map_df["lon"].mean())
     ),
     height=400,
     margin=dict(l=0, r=0, t=0, b=0)
 )
 
-selected_points = plotly_events(fig_map, click_event=True)
+# ✅ NUR diese eine Zeile verwenden!
+selected_points = plotly_events(
+    fig_map,
+    click_event=True,
+    override_height=400
+)
 
 if selected_points:
     station_clicked = selected_points[0]["customdata"]
