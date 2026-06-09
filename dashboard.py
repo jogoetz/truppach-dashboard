@@ -177,7 +177,7 @@ for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
 
     d_raw = d
-    d_smooth = downsample(d.copy())
+    d_smooth = d.copy()
 
     window = smooth_pressure if "Druck" in param else smooth_turbidity
     y_smooth = smooth(d_smooth["value"], window)
