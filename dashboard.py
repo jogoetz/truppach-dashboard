@@ -140,7 +140,19 @@ if df is None or df.empty:
 stations = sorted(df["station"].unique())
 params = sorted(df["parameter"].unique())
 
-sel_stations = st.sidebar.multiselect("Stationen", stations, stations)
+#sel_stations = st.sidebar.multiselect("Stationen", stations, stations)
+
+default_selection = stations
+
+if st.session_state.selected_station_map:
+    default_selection = [st.session_state.selected_station_map]
+
+sel_stations = st.sidebar.multiselect(
+    "Stationen",
+    stations,
+    default_selection
+)
+
 sel_params = st.sidebar.multiselect("Parameter", params, params)
 
 smooth_pressure = st.sidebar.slider("Glättung Druck", 1, 200, 10)
@@ -290,6 +302,18 @@ fig_map.update_layout(
 
 # ✅ WICHTIG: NUR DAS!
 st.plotly_chart(fig_map, use_container_width=True)
+
+
+st.markdown("### 🧭 Station auswählen")
+
+cols = st.columns(len(map_df))
+
+for i, row in map_df.iterrows():
+    with cols[i]:
+        if st.button(row["station"]):
+            st.session_state.selected_station_map = row["station"]
+            st.rerun()
+
 
 # -----------------------------
 # ✅ EXPORT
