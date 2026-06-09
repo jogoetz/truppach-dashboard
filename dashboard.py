@@ -286,11 +286,14 @@ fig_map.update_layout(
 )
 
 # ✅ NUR diese eine Zeile verwenden!
+
 selected_points = plotly_events(
     fig_map,
     click_event=True,
-    override_height=400
+    override_height=400,
+    override_width="100%"
 )
+
 
 if selected_points:
     station_clicked = selected_points[0]["customdata"]
