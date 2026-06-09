@@ -184,6 +184,10 @@ map_df = pd.DataFrame([
 ])
 
 
+# ✅ DEBUG (HIER EINFÜGEN)
+st.write("DF Stations:", stations)
+st.write("Map Stations:", list(map_df["station"]))
+
 # -----------------------------
 # ✅ PLOT
 # -----------------------------
@@ -271,7 +275,12 @@ fig_map.add_trace(go.Scattermapbox(
     textposition="top center",
     marker=dict(
         size=12,
-        color=[color_map[s] for s in map_df["station"]],
+        
+color=[
+    color_map.get(s, "#888888")
+    for s in map_df["station"]
+],
+
     ),
     customdata=map_df["station"]
 ))
