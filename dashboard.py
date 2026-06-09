@@ -183,11 +183,6 @@ map_df = pd.DataFrame([
     for s, coords in station_coords.items()
 ])
 
-
-# ✅ DEBUG (HIER EINFÜGEN)
-st.write("DF Stations:", stations)
-st.write("Map Stations:", list(map_df["station"]))
-
 # -----------------------------
 # ✅ PLOT
 # -----------------------------
