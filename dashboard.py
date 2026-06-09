@@ -255,7 +255,7 @@ st.plotly_chart(fig, width="stretch")
 # -----------------------------
 # ✅ KARTE (HIER EINFÜGEN)
 # -----------------------------
-from streamlit_plotly_events import plotly_events
+#from streamlit_plotly_events import plotly_events
 import plotly.graph_objects as go
 
 st.subheader("🗺️ Messstationen")
@@ -263,43 +263,30 @@ st.subheader("🗺️ Messstationen")
 fig_map = go.Figure()
 
 fig_map.add_trace(go.Scattermapbox(
-    lat=map_df["lat"].astype(float),
-    lon=map_df["lon"].astype(float),
+    lat=map_df["lat"],
+    lon=map_df["lon"],
     mode="markers",
     marker=dict(
         size=14,
         color=[color_map.get(s, "#888888") for s in map_df["station"]],
     ),
-    customdata=map_df["station"].astype(str),
-    hovertemplate="<b>%{customdata}</b><extra></extra>"
+    text=map_df["station"],
+    hovertemplate="<b>%{text}</b><extra></extra>"
 ))
 
 fig_map.update_layout(
     mapbox_style="open-street-map",
     mapbox_zoom=11,
     mapbox_center=dict(
-        lat=float(map_df["lat"].mean()),
-        lon=float(map_df["lon"].mean())
+        lat=map_df["lat"].mean(),
+        lon=map_df["lon"].mean()
     ),
     height=400,
     margin=dict(l=0, r=0, t=0, b=0)
 )
 
-# ✅ NUR diese eine Zeile verwenden!
-
-selected_points = plotly_events(
-    fig_map,
-    click_event=True,
-    override_height=400,
-    override_width="100%"
-)
-
-
-if selected_points:
-    station_clicked = selected_points[0]["customdata"]
-    st.session_state.selected_station_map = station_clicked
-    st.rerun()
-
+# ✅ WICHTIG: NUR DAS!
+st.plotly_chart(fig_map, use_container_width=True)
 
 # -----------------------------
 # ✅ EXPORT
