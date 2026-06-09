@@ -304,17 +304,6 @@ fig_map.update_layout(
 st.plotly_chart(fig_map, use_container_width=True)
 
 
-st.markdown("### 🧭 Station auswählen")
-
-cols = st.columns(len(map_df))
-
-for i, row in map_df.iterrows():
-    with cols[i]:
-        if st.button(row["station"]):
-            st.session_state.selected_station_map = row["station"]
-            st.rerun()
-
-
 # -----------------------------
 # ✅ EXPORT
 # -----------------------------
