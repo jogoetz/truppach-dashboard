@@ -17,6 +17,9 @@ INDEX_FILE = "processed_files.json"
 st.set_page_config(layout="wide")
 st.title("🌊 Monitoring Truppach - Druck & Trübung")
 
+if "selected_station_map" not in st.session_state:
+    st.session_state.selected_station_map = None
+
 # -----------------------------
 # PARSER
 # -----------------------------
@@ -165,6 +168,22 @@ def downsample(d, max_points=1500):
         return d.iloc[::max(1, len(d)//max_points)]
     return d
 
+
+import pandas as pd
+
+station_coords = {
+    "Plankenfels": [49.8791219270009, 11.3350454717875],
+    "Geislareuth": [49.92225187, 11.42177715],
+    "Fahrradbruecke": [49.9151933518834, 11.3986191898584],
+    "Wehr": [49.91562086, 11.39690505]
+}
+
+map_df = pd.DataFrame([
+    {"station": s, "lat": coords[0], "lon": coords[1]}
+    for s, coords in station_coords.items()
+])
+
+
 # -----------------------------
 # ✅ PLOT
 # -----------------------------
@@ -233,6 +252,47 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, width="stretch")
+
+# -----------------------------
+# ✅ KARTE (HIER EINFÜGEN)
+# -----------------------------
+from streamlit_plotly_events import plotly_events
+import plotly.graph_objects as go
+
+st.subheader("🗺️ Messstationen")
+
+fig_map = go.Figure()
+
+fig_map.add_trace(go.Scattermapbox(
+    lat=map_df["lat"],
+    lon=map_df["lon"],
+    mode="markers+text",
+    text=map_df["station"],
+    textposition="top center",
+    marker=dict(
+        size=12,
+        color=[color_map[s] for s in map_df["station"]],
+    ),
+    customdata=map_df["station"]
+))
+
+fig_map.update_layout(
+    mapbox_style="open-street-map",
+    mapbox_zoom=11,
+    mapbox_center=dict(
+        lat=map_df["lat"].mean(),
+        lon=map_df["lon"].mean()
+    ),
+    height=400,
+    margin=dict(l=0, r=0, t=0, b=0)
+)
+
+selected_points = plotly_events(fig_map, click_event=True)
+
+if selected_points:
+    station_clicked = selected_points[0]["customdata"]
+    st.session_state.selected_station_map = station_clicked
+    st.rerun()
 
 # -----------------------------
 # ✅ EXPORT
