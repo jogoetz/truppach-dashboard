@@ -263,26 +263,19 @@ st.plotly_chart(fig, width="stretch")
 from streamlit_plotly_events import plotly_events
 import plotly.graph_objects as go
 
-st.subheader("🗺️ Messstationen")
+
+st.subheader("🗺️ Messstationen (Debug)")
 
 fig_map = go.Figure()
 
 fig_map.add_trace(go.Scattermapbox(
     lat=map_df["lat"],
     lon=map_df["lon"],
-    mode="markers+text",
-    text=map_df["station"],
-    textposition="top center",
+    mode="markers",
     marker=dict(
-        size=12,
-        
-color=[
-    color_map.get(s, "#888888")
-    for s in map_df["station"]
-],
-
-    ),
-    customdata=map_df["station"]
+        size=14,
+        color="red"   # ✅ feste Farbe zum Test
+    )
 ))
 
 fig_map.update_layout(
@@ -292,16 +285,11 @@ fig_map.update_layout(
         lat=map_df["lat"].mean(),
         lon=map_df["lon"].mean()
     ),
-    height=400,
-    margin=dict(l=0, r=0, t=0, b=0)
+    height=400
 )
 
-selected_points = plotly_events(fig_map, click_event=True)
+st.plotly_chart(fig_map, use_container_width=True)
 
-if selected_points:
-    station_clicked = selected_points[0]["customdata"]
-    st.session_state.selected_station_map = station_clicked
-    st.rerun()
 
 # -----------------------------
 # ✅ EXPORT
