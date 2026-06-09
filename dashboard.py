@@ -270,7 +270,7 @@ fig_map.add_trace(go.Scattermapbox(
         size=14,
         color=[color_map.get(s, "#888888") for s in map_df["station"]],
     ),
-    customdata=map_df["station"],
+    customdata=map_df["station"].astype(str),
     hovertemplate="<b>%{customdata}</b><extra></extra>"
 ))
 
