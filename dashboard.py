@@ -199,7 +199,7 @@ map_df = pd.DataFrame([
 # ✅ PLOT
 # -----------------------------
 
-st.subheader("🗺️ Daten")
+st.subheader("📈 Daten")
 
 fig = go.Figure()
 
