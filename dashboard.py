@@ -186,6 +186,9 @@ map_df = pd.DataFrame([
 # -----------------------------
 # ✅ PLOT
 # -----------------------------
+
+st.subheader("🗺️ Daten")
+
 fig = go.Figure()
 
 base_colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
