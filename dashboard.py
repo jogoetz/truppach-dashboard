@@ -108,7 +108,6 @@ def load_behringersmuehle():
     # ✅ FIX: Spalten direkt setzen (kein Raten!)
  
     .astype(float)
-    )
 
 df["schweb_bm"] = (
     df["schweb_bm"]
