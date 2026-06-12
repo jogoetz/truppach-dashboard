@@ -106,42 +106,22 @@ def load_behringersmuehle():
         return pd.DataFrame()
 
     # ✅ FIX: Spalten direkt setzen (kein Raten!)
-    df = df.iloc[:, :3]
-    df.columns = ["time", "schweb_bm", "abfluss_bm"]
+ 
+ .astype(float)
+)
 
+df["schweb_bm"] = (
+    df["schweb_bm"]
+    .astype(str)
+    .str.replace(",", ".", regex=False)
+    .astype(float)
+)
 
-    # ✅ Datum bereinigen
-    df["time"] = (
-        df["time"]
-        .astype(str)
-        .str.replace(r"\(.*\)", "", regex=True)
-        .str.strip()
-    )
-
-    df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
-
-    # ✅ Werte sauber parsen
-   
-    df["abfluss_bm"] = (
-        df["abfluss_bm"]
-        .astype(str)
-        .str.replace(".", "", regex=False)   # ✅ Tausender entfernen
-        .str.replace(",", ".", regex=False)  # ✅ Dezimal setzen
-        .astype(float)
-    )
-
-
-    df["schweb_bm"] = pd.to_numeric(
-        df["schweb_bm"].astype(str).str.replace(",", ".", regex=False),
-        errors="coerce"
-    )
-
-    # ✅ nur gültige Werte behalten
-    df = df[
-        df["time"].notna() &
-        df["abfluss_bm"].notna() &
-        df["schweb_bm"].notna()
-    ]
+df = df[
+    df["time"].notna() &
+    df["abfluss_bm"].notna() &
+    df["schweb_bm"].notna()
+]
 
     return df
 
