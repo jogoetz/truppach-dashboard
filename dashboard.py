@@ -43,24 +43,19 @@ def load_data():
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_hnd_abfluss():
-    url = "https://www.gkd.bayern.de/de/fluesse/abfluss/bayern/plankenfels-24244504/messwerte?zr=alle&addhr=hr_hw&beginn=01.01.2025&ende=12.06.2026"
+    url = "https://www.gkd.bayern.de/de/fluesse/abfluss/bayern/plankenfels-24244504/messwerte.csv"
     # url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&von=01.01.2025&bis=31.12.2026"
-    
-    tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
-    df_hnd = tables[0]
 
-    # ✅ nimmt automatisch nur die ersten 2 sinnvollen Spalten
-    df_hnd = df_hnd.iloc[:, :2]
+    df = pd.read_csv(url, sep=";", decimal=",")
 
-    # ✅ sichere Benennung
-    df_hnd.columns = ["time", "abfluss"]
+    # Spalten bereinigen (robust gegen Änderungen)
+    df = df.iloc[:, :2]
+    df.columns = ["time", "abfluss"]
 
-    # ✅ Typkonvertierung robust
-    df_hnd["time"] = pd.to_datetime(df_hnd["time"], dayfirst=True, errors="coerce")
-    df_hnd["abfluss"] = pd.to_numeric(df_hnd["abfluss"], errors="coerce")
+    df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
+    df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
-    return df_hnd.dropna()
-
+    return df.dropna()
 
 # -----------------------------
 # RESET
