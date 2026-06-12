@@ -170,7 +170,7 @@ fig.update_layout(
         yanchor="top",
         bgcolor="rgba(255,255,255,0.8)"
     ),
-    margin=dict(l=60, r=350, t=20, b=40)
+    margin=dict(l=60, r=350, t=20, b=40),
     uirevision="keep-zoom"
 )
 
