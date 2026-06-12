@@ -120,10 +120,15 @@ def load_behringersmuehle():
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
 
     # ✅ Werte sauber parsen
-    df["abfluss_bm"] = pd.to_numeric(
-        df["abfluss_bm"].astype(str).str.replace(",", ".", regex=False),
-        errors="coerce"
+   
+    df["abfluss_bm"] = (
+        df["abfluss_bm"]
+        .astype(str)
+        .str.replace(".", "", regex=False)   # ✅ Tausender entfernen
+        .str.replace(",", ".", regex=False)  # ✅ Dezimal setzen
+        .astype(float)
     )
+
 
     df["schweb_bm"] = pd.to_numeric(
         df["schweb_bm"].astype(str).str.replace(",", ".", regex=False),
