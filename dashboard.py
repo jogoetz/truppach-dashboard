@@ -62,7 +62,16 @@ def load_gkd_abfluss():
     df.columns = ["time", "abfluss"]
 
     # ✅ konvertieren
-    df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
+    # ✅ störende Texte entfernen (falls vorhanden)
+    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
+
+    # ✅ explizites Datumsformat
+    df["time"] = pd.to_datetime(
+        df["time"],
+        format="%d.%m.%Y %H:%M",
+        errors="coerce"
+)
+
     df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
     return df.dropna()
