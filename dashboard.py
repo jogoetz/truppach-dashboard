@@ -217,7 +217,7 @@ for (station, param), d in df.groupby(["station", "parameter"]):
 # Abfluss
 if show_hnd:
     d = load_hnd_abfluss()
-    fig.add_trace(go.Scatter(x=d["time"], y=d["abfluss"], name="Abfluss PF", yaxis="y3"))
+    fig.add_trace(go.Scatter(x=d["time"], y=d["abfluss"], name="Abfluss Plankenfels", yaxis="y3"))
 
 
 # Abfluss BM
@@ -227,7 +227,7 @@ if show_bm_abfluss and df_bm is not None:
     fig.add_trace(go.Scatter(
         x=d_abf["time"],
         y=d_abf["abfluss_bm"],
-        name="Abfluss BM",
+        name="Abfluss Behringersmühle",
         yaxis="y3",
         line=dict(color="black", width=2)
     ))
@@ -240,7 +240,7 @@ if show_bm_schweb and df_bm is not None:
     fig.add_trace(go.Scatter(
         x=d_sch["time"],
         y=d_sch["schweb_bm"],
-        name="Schwebstoff BM",
+        name="Schwebstoff Behringersmühle",
         yaxis="y4",
         line=dict(color="brown", width=2),
         opacity=0.8
