@@ -51,23 +51,15 @@ def load_hnd_abfluss():
 
     df = max(tables, key=lambda x: x.shape[0])
 
-    # ✅ Spaltennamen sauber setzen
     cols = list(df.columns)
-
-    # Debug einmal
-    # st.write(cols)
-
-    # ✅ richtige Spalten automatisch finden
     time_col = cols[0]
 
-    # suche Spalte mit "Abfluss"
     value_col = None
     for c in cols:
         if "abfluss" in str(c).lower():
             value_col = c
             break
 
-    # fallback → zweite Spalte
     if value_col is None and len(cols) >= 2:
         value_col = cols[1]
 
@@ -83,9 +75,8 @@ def load_hnd_abfluss():
 
     return df
 
-
 # -----------------------------
-# ✅ BEHRINGERSMÜHLE (GKD: ABFLUSS + SCHWEBSTOFF)
+# ✅ BEHRINGERSMÜHLE (FIX!)
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_behringersmuehle():
@@ -104,39 +95,28 @@ def load_behringersmuehle():
     if df.shape[1] < 3:
         return pd.DataFrame()
 
-    # ✅ WICHTIG: korrekte Reihenfolge!
-    # 0 = Zeit, 1 = Schwebstoff, 2 = Abfluss
+    # ✅ FESTE STRUKTUR (entscheidend!)
     df = df.iloc[:, :3]
-    df.columns = ["time", "schweb_bm", "abfluss_bm"]
+
+    df["time"] = df.iloc[:, 0]
+    df["schweb_bm"] = df.iloc[:, 1]
+    df["abfluss_bm"] = df.iloc[:, 2]
 
     # ✅ Zeit
     df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
 
-    
-    # ✅ Schwebstoff
-    df["schweb_bm"] = (
-    df["schweb_bm"]
-    .astype(str)
-    .str.replace(",", ".", regex=False)
-    .str.extract(r"([-+]?\d*\.?\d+)")[0]   # ✅ nur die Zahl rausziehen
-    .astype(float)
-    )
+    # ✅ Werte (nur Komma!)
+    df["schweb_bm"] = df["schweb_bm"].astype(str).str.replace(",", ".", regex=False)
+    df["schweb_bm"] = pd.to_numeric(df["schweb_bm"], errors="coerce")
 
-    # ✅ Abfluss
-    df["abfluss_bm"] = (
-    df["abfluss_bm"]
-    .astype(str)
-    .str.replace(",", ".", regex=False)
-    .str.extract(r"([-+]?\d*\.?\d+)")[0]   # ✅ nur die Zahl rausziehen
-    .astype(float)
-    )
+    df["abfluss_bm"] = df["abfluss_bm"].astype(str).str.replace(",", ".", regex=False)
+    df["abfluss_bm"] = pd.to_numeric(df["abfluss_bm"], errors="coerce")
 
-    # ✅ filtern
     df = df[
         df["time"].notna() &
-        df["abfluss_bm"].notna() &
-        df["schweb_bm"].notna()
+        df["schweb_bm"].notna() &
+        df["abfluss_bm"].notna()
     ]
 
     return df
@@ -148,7 +128,6 @@ if st.sidebar.button("🔄 Daten neu laden"):
     st.cache_data.clear()
     st.rerun()
 
-# ✅ WICHTIG: Original-Daten separat behalten!
 df_all = load_data()
 
 if df_all.empty:
@@ -180,7 +159,6 @@ show_bm_schweb  = st.sidebar.checkbox("🟤 Schwebstoff Behringersmühle (g/m³)
 scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
 scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
 
-# ✅ NUR fürs Plotten gefiltert
 df = df_all[
     (df_all["station"].isin(sel_stations)) &
     (df_all["parameter"].isin(sel_params))
@@ -230,7 +208,7 @@ for (station, param), d in df.groupby(["station", "parameter"]):
 
     fig.add_trace(go.Scatter(x=d["time"], y=y_smooth, mode="lines", name=f"{station} - {param}", yaxis=axis))
 
-# Abfluss
+# Abfluss PF
 if show_hnd:
     df_hnd = load_hnd_abfluss()
     if not df_hnd.empty:
@@ -243,8 +221,7 @@ if show_hnd:
             yaxis="y3"
         ))
 
-
-# Behringersmühle Abfluss
+# BEHRINGERSMÜHLE
 if show_bm_abfluss and df_bm is not None and not df_bm.empty:
     fig.add_trace(go.Scatter(
         x=df_bm["time"],
@@ -255,7 +232,6 @@ if show_bm_abfluss and df_bm is not None and not df_bm.empty:
         yaxis="y3"
     ))
 
-# Behringersmühle Schwebstoff
 if show_bm_schweb and df_bm is not None and not df_bm.empty:
     fig.add_trace(go.Scatter(
         x=df_bm["time"],
@@ -266,8 +242,6 @@ if show_bm_schweb and df_bm is not None and not df_bm.empty:
         yaxis="y2"
     ))
 
-
-# Layout
 fig.update_layout(
     height=600,
     xaxis_title="Zeit",
@@ -277,84 +251,3 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, width="stretch")
-
-# -----------------------------
-# ✅ KARTE (WIEDER DRIN)
-# -----------------------------
-st.subheader("🗺️ Messstationen")
-
-station_coords = {
-    "Plankenfels": [49.8791, 11.3350],
-    "Geislareuth": [49.9222, 11.4217],
-    "Seitenbach": [49.9151, 11.3986],
-    "Wehr": [49.9156, 11.3969]
-}
-
-map_df = pd.DataFrame([
-    {"station": s, "lat": c[0], "lon": c[1]}
-    for s, c in station_coords.items()
-])
-
-fig_map = go.Figure()
-
-fig_map.add_trace(go.Scattermapbox(
-    lat=map_df["lat"],
-    lon=map_df["lon"],
-    mode="markers+text",
-    text=map_df["station"],
-    marker=dict(size=14, color="blue")
-))
-
-fig_map.update_layout(
-    mapbox_style="open-street-map",
-    mapbox_zoom=11,
-    mapbox_center=dict(
-        lat=map_df["lat"].mean(),
-        lon=map_df["lon"].mean()
-    ),
-    height=400,
-    margin=dict(l=0, r=0, t=0, b=0)
-)
-
-st.plotly_chart(fig_map, width="stretch")
-
-# optional: Klick → Filter
-try:
-    clicked = st.session_state.get("map_click")
-except:
-    clicked = None
-
-# -----------------------------
-# ✅ EXPORT (JETZT FIX)
-# -----------------------------
-st.subheader("⬇️ Datenexport")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    export_station = st.selectbox("Station wählen", stations)
-
-# ✅ WICHTIG: UNGEFILTERTE DATEN verwenden
-df_export = df_all[df_all["station"] == export_station]
-
-time_valid = df_export["time"].dropna()
-
-if time_valid.empty:
-    st.warning("Keine Zeitdaten verfügbar")
-else:
-    with col2:
-        start_date = st.datetime_input("Startzeit", time_valid.min())
-
-    with col3:
-        end_date = st.datetime_input("Endzeit", time_valid.max())
-
-    export_df = df_export[
-        (df_export["time"] >= pd.to_datetime(start_date)) &
-        (df_export["time"] <= pd.to_datetime(end_date))
-    ]
-
-    if not export_df.empty:
-        csv = export_df.to_csv(index=False).encode("utf-8")
-        st.download_button("📥 CSV herunterladen", csv, f"{export_station}.csv")
-    else:
-        st.warning("Keine Daten im Zeitraum")
