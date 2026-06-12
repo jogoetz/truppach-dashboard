@@ -16,16 +16,15 @@ if "selected_station_map" not in st.session_state:
     st.session_state.selected_station_map = None
 
 # -----------------------------
-# ✅ WARTUNGSTAGE
+# WARTUNGSTAGE
 # -----------------------------
-maintenance_dates = [
+maintenance_dates = pd.to_datetime([
     "03.06.2026","15.05.2026","30.04.2026","26.03.2026",
     "11.02.2026","09.02.2026","27.01.2026",
     "18.12.2025","08.12.2025","02.12.2025",
     "06.11.2025","30.10.2025","20.10.2025",
     "15.10.2025","02.10.2025","01.09.2025"
-]
-maintenance_dates = pd.to_datetime(maintenance_dates, dayfirst=True)
+], dayfirst=True)
 
 # -----------------------------
 # LOAD MAIN DATA
@@ -36,54 +35,43 @@ def load_data():
     r.raise_for_status()
     df = pd.read_parquet(io.BytesIO(r.content))
     df["time"] = pd.to_datetime(df["time"], errors="coerce")
+    df = df.dropna(subset=["time"])
     return df
 
 # -----------------------------
-# ✅ HND DATA
+# GKD ABFLUSS (robust!)
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_gkd_abfluss():
     url = "https://www.gkd.bayern.de/de/fluesse/abfluss/bayern/plankenfels-24244504/messwerte?zr=alle&beginn=01.01.2025&ende=12.06.2026"
 
-    tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
+    tables = pd.read_html(url, flavor="bs4")
 
-    # ✅ passende Tabelle finden (nicht blind tables[0])
-    df = None
-    for t in tables:
-        if t.shape[1] >= 2:
-            df = t
-            break
-
-    if df is None:
+    if len(tables) == 0:
         return pd.DataFrame()
 
-    # ✅ erste 2 Spalten nehmen
+    # Tabelle auswählen
+    df = tables[0]
+
+    # Nur relevante Spalten
     df = df.iloc[:, :2]
     df.columns = ["time", "abfluss"]
 
-    # ✅ konvertieren
-    # ✅ störende Texte entfernen (falls vorhanden)
-    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
+    # Datum bereinigen (wichtig!)
+    df["time"] = df["time"].astype(str)
+    df["time"] = df["time"].str.extract(r'(\d{2}\.\d{2}\.\d{4} \d{2}:\d{2})')[0]
 
-    # ✅ explizites Datumsformat
     df["time"] = pd.to_datetime(
         df["time"],
         format="%d.%m.%Y %H:%M",
         errors="coerce"
-)
+    )
 
     df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
-    return df.dropna()
-
-
-# ✅ DEBUG (HIER!)
-    st.write(df.head())
-    st.write("Zeitraum:", df["time"].min(), "→", df["time"].max())
-    st.write("Anzahl Punkte:", len(df))
+    df = df.dropna()
 
     return df
-
 
 # -----------------------------
 # RESET
@@ -94,7 +82,7 @@ if st.sidebar.button("🔄 Daten neu laden"):
 
 df = load_data()
 
-if df is None or df.empty:
+if df.empty:
     st.error("❌ Keine Daten gefunden")
     st.stop()
 
@@ -117,7 +105,6 @@ smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
 show_raw = st.sidebar.checkbox("Rohdaten anzeigen", True)
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", True)
 
-# ✅ NEU: HND Abfluss
 show_hnd = st.sidebar.checkbox("🌊 Abfluss Pegel Plankenfels", False)
 
 scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
@@ -135,7 +122,7 @@ def smooth(series, window):
     return series.rolling(window, min_periods=1).mean()
 
 # -----------------------------
-# ✅ PLOT
+# PLOT
 # -----------------------------
 st.subheader("📈 Daten")
 fig = go.Figure()
@@ -159,7 +146,7 @@ if show_maintenance:
 base_colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
 color_map = {s: base_colors[i % 4] for i, s in enumerate(stations)}
 
-# Hauptdaten
+# Sensor-Daten
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
 
@@ -167,7 +154,6 @@ for (station, param), d in df.groupby(["station", "parameter"]):
     y_smooth = smooth(d["value"], window)
 
     axis = "y1" if "Druck" in param else "y2"
-    color = color_map.get(station, "#000000")
     dash = "dash" if "Druck" in param else "solid"
 
     if show_raw:
@@ -176,7 +162,6 @@ for (station, param), d in df.groupby(["station", "parameter"]):
                 x=d["time"],
                 y=d["value"],
                 mode="lines",
-                line=dict(width=1, color=color, dash=dash),
                 opacity=0.25,
                 showlegend=False,
                 yaxis=axis
@@ -188,32 +173,28 @@ for (station, param), d in df.groupby(["station", "parameter"]):
             x=d["time"],
             y=y_smooth,
             mode="lines",
-            line=dict(width=3, color=color, dash=dash),
             name=f"{station} - {param}",
-            legendgroup=station,
             yaxis=axis
         )
     )
 
-# ✅ HND Abfluss hinzufügen
+# ✅ Abfluss hinzufügen
 if show_hnd:
     df_hnd = load_gkd_abfluss()
 
-#    df_hnd = df_hnd[
-#       (df_hnd["time"] >= df["time"].min()) &
-#      (df_hnd["time"] <= df["time"].max())
-# ]
-
-    fig.add_trace(
-        go.Scatter(
-            x=df_hnd["time"],
-            y=df_hnd["abfluss"],
-            mode="lines",
-            name="Abfluss HND (m³/s)",
-            line=dict(color="black", width=2, dash="dot"),
-            yaxis="y3"
+    if not df_hnd.empty:
+        fig.add_trace(
+            go.Scatter(
+                x=df_hnd["time"],
+                y=df_hnd["abfluss"],
+                mode="lines",
+                name="Abfluss (m³/s)",
+                line=dict(color="black", width=2, dash="dot"),
+                yaxis="y3"
+            )
         )
-    )
+    else:
+        st.warning("Keine Abflussdaten verfügbar")
 
 # Layout
 fig.update_layout(
@@ -222,71 +203,28 @@ fig.update_layout(
     yaxis=dict(title="Druck (psi)", side="left", type=scale_pressure),
     yaxis2=dict(title="Trübung (NTU)", overlaying="y", side="right", type=scale_turbidity),
     yaxis3=dict(title="Abfluss (m³/s)", overlaying="y", side="right", position=0.92),
-    legend=dict(
-        x=1.05,
-        y=1,
-        xanchor="left",
-        yanchor="top",
-        bgcolor="rgba(255,255,255,0.8)"
-    ),
-    margin=dict(l=60, r=350, t=20, b=40),
-    uirevision="keep-zoom"
+    margin=dict(l=60, r=300, t=20, b=40)
 )
 
 st.plotly_chart(fig, width="stretch")
 
 # -----------------------------
-# ✅ KARTE
+# EXPORT (FIXED!)
 # -----------------------------
-st.subheader("🗺️ Messstationen")
-
-station_coords = {
-    "Plankenfels": [49.8791219270009, 11.3350454717875],
-    "Geislareuth": [49.92225187, 11.42177715],
-    "Seitenbach": [49.9151933518834, 11.3986191898584],
-    "Wehr": [49.91562086, 11.39690505]
-}
-
-map_df = pd.DataFrame([
-    {"station": s, "lat": coords[0], "lon": coords[1]}
-    for s, coords in station_coords.items()
-])
-
-fig_map = go.Figure()
-fig_map.add_trace(go.Scattermapbox(
-    lat=map_df["lat"],
-    lon=map_df["lon"],
-    mode="markers",
-    marker=dict(size=14, color=[color_map.get(s, "#888888") for s in map_df["station"]]),
-    text=map_df["station"],
-    hovertemplate="<b>%{text}</b><extra></extra>"
-))
-
-fig_map.update_layout(
-    mapbox_style="open-street-map",
-    mapbox_zoom=11,
-    mapbox_center=dict(lat=map_df["lat"].mean(), lon=map_df["lon"].mean()),
-    height=400,
-    margin=dict(l=0, r=0, t=0, b=0)
-)
-
-st.plotly_chart(fig_map, use_container_width=True)
-
-# -----------------------------
-# ✅ EXPORT
-# -----------------------------
-st.subheader("⬇️ Datenexport (Rohdaten)")
+st.subheader("⬇️ Datenexport")
 
 col1, col2, col3 = st.columns(3)
+
+time_valid = df["time"].dropna()
 
 with col1:
     export_station = st.selectbox("Station wählen", stations)
 
 with col2:
-    start_date = st.datetime_input("Startzeit", df["time"].min())
+    start_date = st.datetime_input("Startzeit", time_valid.min())
 
 with col3:
-    end_date = st.datetime_input("Endzeit", df["time"].max())
+    end_date = st.datetime_input("Endzeit", time_valid.max())
 
 export_df = df[
     (df["station"] == export_station) &
@@ -296,6 +234,6 @@ export_df = df[
 
 if not export_df.empty:
     csv = export_df.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 CSV herunterladen", csv, f"{export_station}_export.csv", "text/csv")
+    st.download_button("📥 CSV herunterladen", csv, f"{export_station}.csv")
 else:
-    st.warning("Keine Daten im gewählten Zeitraum")
+    st.warning("Keine Daten im Zeitraum")
