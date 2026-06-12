@@ -179,7 +179,7 @@ for (station, param), d in df.groupby(["station", "parameter"]):
 
 # ✅ HND Abfluss hinzufügen
 if show_hnd:
-    df_hnd = load_hnd_abfluss()
+    df_hnd = load_gkd_abfluss()
 
 #    df_hnd = df_hnd[
 #       (df_hnd["time"] >= df["time"].min()) &
