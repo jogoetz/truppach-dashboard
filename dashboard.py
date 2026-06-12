@@ -38,7 +38,7 @@ def load_data():
     return df.dropna(subset=["time"])
 
 # -----------------------------
-# ✅ HND ABFLUSS (STABIL)
+# ✅ HND ABFLUSS
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_hnd_abfluss():
@@ -49,29 +49,47 @@ def load_hnd_abfluss():
     if not tables:
         return pd.DataFrame()
 
-    # größte Tabelle wählen
     df = max(tables, key=lambda x: x.shape[0])
 
-    # Sicherheitscheck
     if df.shape[1] < 2:
         return pd.DataFrame()
 
-    # erste 2 Spalten = Zeit + Abfluss
     df = df.iloc[:, :2]
     df.columns = ["time", "abfluss"]
 
-    # Datum bereinigen
-    df["time"] = df["time"].astype(str)
-    df["time"] = df["time"].str.replace(r"\(.*\)", "", regex=True).str.strip()
-
-    # Datum parsen
+    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
-
-    # Abfluss parsen
     df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
-    # gültige Werte behalten
     df = df[df["time"].notna() & df["abfluss"].notna()]
+
+    return df
+
+# -----------------------------
+# ✅ NIEDERSCHLAG MISTELGAU
+# -----------------------------
+@st.cache_data(ttl=600)
+def load_rain_mistelgau():
+    url = "https://www.hnd.bayern.de/niederschlag/regnitz/mistelbach-200113?addhr=false&days=365"
+
+    tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
+
+    if not tables:
+        return pd.DataFrame()
+
+    df = max(tables, key=lambda x: x.shape[0])
+
+    if df.shape[1] < 2:
+        return pd.DataFrame()
+
+    df = df.iloc[:, :2]
+    df.columns = ["time", "rain"]
+
+    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
+    df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
+    df["rain"] = pd.to_numeric(df["rain"], errors="coerce")
+
+    df = df[df["time"].notna() & df["rain"].notna()]
 
     return df
 
@@ -106,7 +124,8 @@ smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
 
 show_raw = st.sidebar.checkbox("Rohdaten anzeigen", True)
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", True)
-show_hnd = st.sidebar.checkbox("🌊 Abfluss Pegel Plankenfels", True)
+show_hnd = st.sidebar.checkbox("🌊 Abfluss", True)
+show_rain = st.sidebar.checkbox("🌧️ Niederschlag", True)
 
 scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
 scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
@@ -117,7 +136,7 @@ df = df[
 ]
 
 # -----------------------------
-# HELPERS
+# HELPER
 # -----------------------------
 def smooth(series, window):
     return series.rolling(window, min_periods=1).mean()
@@ -128,6 +147,7 @@ def smooth(series, window):
 st.subheader("📈 Daten")
 fig = go.Figure()
 
+# Wartung
 if show_maintenance:
     for d in maintenance_dates:
         fig.add_shape(
@@ -142,8 +162,7 @@ if show_maintenance:
             line_width=0
         )
 
-base_colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
-
+# Sensoren
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
 
@@ -157,10 +176,9 @@ for (station, param), d in df.groupby(["station", "parameter"]):
 
     fig.add_trace(go.Scatter(x=d["time"], y=y_smooth, mode="lines", name=f"{station} - {param}", yaxis=axis))
 
-# ✅ HND Abfluss
+# ✅ Abfluss
 if show_hnd:
     df_hnd = load_hnd_abfluss()
-
     if not df_hnd.empty:
         fig.add_trace(go.Scatter(
             x=df_hnd["time"],
@@ -170,22 +188,35 @@ if show_hnd:
             line=dict(color="black", width=2, dash="dot"),
             yaxis="y3"
         ))
-    else:
-        st.warning("Keine Abflussdaten verfügbar")
+
+# ✅ Niederschlag (Bars!)
+if show_rain:
+    df_rain = load_rain_mistelgau()
+    if not df_rain.empty:
+        fig.add_trace(go.Bar(
+            x=df_rain["time"],
+            y=df_rain["rain"],
+            name="Niederschlag (mm)",
+            marker_color="blue",
+            opacity=0.35,
+            yaxis="y4"
+        ))
 
 # Layout
 fig.update_layout(
-    height=600,
+    height=650,
     xaxis_title="Zeit",
     yaxis=dict(title="Druck", side="left", type=scale_pressure),
     yaxis2=dict(title="Trübung", overlaying="y", side="right", type=scale_turbidity),
-    yaxis3=dict(title="Abfluss", overlaying="y", side="right", position=0.92)
+    yaxis3=dict(title="Abfluss", overlaying="y", side="right", position=0.9),
+    yaxis4=dict(title="Niederschlag", overlaying="y", side="right", position=1.0),
+    margin=dict(l=60, r=350, t=20, b=40)
 )
 
 st.plotly_chart(fig, width="stretch")
 
 # -----------------------------
-# ✅ EXPORT (FINAL FIX)
+# EXPORT (FIXED)
 # -----------------------------
 st.subheader("⬇️ Datenexport")
 
