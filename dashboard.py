@@ -44,24 +44,44 @@ def load_data():
 def load_hnd_abfluss():
     url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&begin=01.01.2025&end=12.06.2026&setdiskr=15"
 
-    tables = pd.read_html(url, flavor="bs4")
+    tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
 
     if not tables:
         return pd.DataFrame()
 
     df = max(tables, key=lambda x: x.shape[0])
 
-    if df.shape[1] < 2:
-        return pd.DataFrame()
+    # ✅ Spaltennamen sauber setzen
+    cols = list(df.columns)
 
-    df = df.iloc[:, :2]
+    # Debug einmal
+    # st.write(cols)
+
+    # ✅ richtige Spalten automatisch finden
+    time_col = cols[0]
+
+    # suche Spalte mit "Abfluss"
+    value_col = None
+    for c in cols:
+        if "abfluss" in str(c).lower():
+            value_col = c
+            break
+
+    # fallback → zweite Spalte
+    if value_col is None and len(cols) >= 2:
+        value_col = cols[1]
+
+    df = df[[time_col, value_col]]
     df.columns = ["time", "abfluss"]
 
+    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
+
     df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
-    return df.dropna()
+    df = df[df["time"].notna() & df["abfluss"].notna()]
 
+    return df
 # -----------------------------
 # RESET
 # -----------------------------
