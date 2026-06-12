@@ -12,6 +12,9 @@ PARQUET_URL = "https://github.com/jogoetz/truppach-dashboard/raw/refs/heads/main
 st.set_page_config(layout="wide")
 st.title("🌊 Monitoring Truppach - Druck & Trübung")
 
+if "selected_station_map" not in st.session_state:
+    st.session_state.selected_station_map = None
+
 # -----------------------------
 # WARTUNGSTAGE
 # -----------------------------
@@ -20,6 +23,7 @@ maintenance_dates = pd.to_datetime([
     "11.02.2026","09.02.2026","27.01.2026",
     "18.12.2025","08.12.2025","02.12.2025",
     "06.11.2025","30.10.2025","20.10.2025",
+    "15.10.2025","02.10.2025","01.09.2025"
 ], dayfirst=True)
 
 # -----------------------------
@@ -34,44 +38,60 @@ def load_data():
     return df.dropna(subset=["time"])
 
 # -----------------------------
-# HND ABFLUSS Plankenfels
+# ✅ HND ABFLUSS (Plankenfels)
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_hnd_abfluss():
     url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&begin=01.01.2025&end=12.06.2026&setdiskr=15"
-    tables = pd.read_html(url, flavor="bs4")
+
+    tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
+    if not tables:
+        return pd.DataFrame()
+
     df = max(tables, key=lambda x: x.shape[0])
+    if df.shape[1] < 2:
+        return pd.DataFrame()
 
     df = df.iloc[:, :2]
     df.columns = ["time", "abfluss"]
 
+    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
+
     df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
-    return df.dropna()
+    return df[df["time"].notna() & df["abfluss"].notna()]
 
 # -----------------------------
-# HND NIEDERSCHLAG
+# ✅ NIEDERSCHLAG (Mistelgau)
 # -----------------------------
 @st.cache_data(ttl=600)
-def load_rain():
+def load_rain_mistelgau():
     url = "https://www.hnd.bayern.de/niederschlag/regnitz/mistelbach-200113/tabelle?beginn=13.06.2025&ende=12.06.2026"
-    tables = pd.read_html(url, flavor="bs4")
+
+    tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
+    if not tables:
+        return pd.DataFrame()
+
     df = max(tables, key=lambda x: x.shape[0])
+    if df.shape[1] < 2:
+        return pd.DataFrame()
 
     df = df.iloc[:, :2]
     df.columns = ["time", "rain"]
 
+    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
+
     df["rain"] = pd.to_numeric(df["rain"], errors="coerce")
 
-    return df.dropna()
+    return df[df["time"].notna() & df["rain"].notna()]
 
 # -----------------------------
-# GKD Behringersmühle (beides!)
+# ✅ SCHWEBSTOFF (GKD, Behringersmühle)
 # -----------------------------
 @st.cache_data(ttl=600)
-def load_bm():
+def load_schwebstoff():
     url = "https://www.gkd.bayern.de/de/fluesse/schwebstoff/regnitz/behringersmuehle-24241710/gesamtzeitraum/tabelle?zr=gesamt&parameterNr=15&parameter=konzentration"
 
     try:
@@ -79,38 +99,44 @@ def load_bm():
     except Exception:
         return pd.DataFrame()
 
-    df = max(tables, key=lambda x: x.shape[0])
-
-    if df.shape[1] < 3:
+    if not tables:
         return pd.DataFrame()
 
-    df = df.iloc[:, :3]
-    df.columns = ["time", "abfluss", "schweb"]
+    df = max(tables, key=lambda x: x.shape[0])
+    if df.shape[1] < 2:
+        return pd.DataFrame()
 
+    df = df.iloc[:, :2]
+    df.columns = ["time", "schweb"]
+
+    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
 
-    for col in ["abfluss", "schweb"]:
-        df[col] = (
-            df[col]
-            .astype(str)
-            .str.replace(",", ".", regex=False)
-            .str.extract(r"([-+]?\d*\.?\d+)")[0]
-            .astype(float)
-        )
+    df["schweb"] = (
+        df["schweb"]
+        .astype(str)
+        .str.replace(",", ".", regex=False)
+        .str.extract(r"([-+]?\d*\.?\d+)")[0]
+        .astype(float)
+    )
 
-    return df.dropna(subset=["time"])
+    return df[df["time"].notna() & df["schweb"].notna()]
 
 # -----------------------------
-# LOAD
+# RESET
 # -----------------------------
+if st.sidebar.button("🔄 Daten neu laden"):
+    st.cache_data.clear()
+    st.rerun()
+
 df = load_data()
 
 if df.empty:
-    st.error("Keine Daten")
+    st.error("❌ Keine Daten gefunden")
     st.stop()
 
 # -----------------------------
-# SIDEBAR
+# FILTER
 # -----------------------------
 stations = sorted(df["station"].unique())
 params = sorted(df["parameter"].unique())
@@ -118,59 +144,82 @@ params = sorted(df["parameter"].unique())
 sel_stations = st.sidebar.multiselect("Stationen", stations, stations)
 sel_params = st.sidebar.multiselect("Parameter", params, params)
 
-show_raw = st.sidebar.checkbox("Rohdaten", True)
-show_maintenance = st.sidebar.checkbox("Wartung", True)
+smooth_pressure = st.sidebar.slider("Glättung Druck", 1, 200, 10)
+smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
 
-# externe daten
-show_pf = st.sidebar.checkbox("Abfluss Plankenfels", True)
-show_rain = st.sidebar.checkbox("Niederschlag", True)
-show_bm_a = st.sidebar.checkbox("BM Abfluss", False)
-show_bm_s = st.sidebar.checkbox("BM Schwebstoff", True)
+show_raw = st.sidebar.checkbox("Rohdaten anzeigen", True)
+show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", True)
 
-# -----------------------------
-# FILTER
-# -----------------------------
+# ✅ neue Checkboxen
+show_hnd = st.sidebar.checkbox("🌊 Abfluss Plankenfels", True)
+show_rain = st.sidebar.checkbox("🌧️ Niederschlag Mistelgau", True)
+show_schweb = st.sidebar.checkbox("🟤 Schwebstoff Behringersmühle (g/m³)", True)
+
+scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
+scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
+
 df = df[
     (df["station"].isin(sel_stations)) &
     (df["parameter"].isin(sel_params))
 ]
 
 # -----------------------------
+# HELPER
+# -----------------------------
+def smooth(series, window):
+    return series.rolling(window, min_periods=1).mean()
+
+# -----------------------------
 # PLOT
 # -----------------------------
+st.subheader("📈 Daten")
 fig = go.Figure()
 
 # Wartung
 if show_maintenance:
     for d in maintenance_dates:
-        fig.add_vrect(x0=d, x1=d+pd.Timedelta(days=1), fillcolor="gray", opacity=0.2)
+        fig.add_shape(
+            type="rect",
+            x0=d,
+            x1=d + pd.Timedelta(days=1),
+            y0=0,
+            y1=1,
+            yref="paper",
+            fillcolor="gray",
+            opacity=0.25
+        )
 
 # Sensoren
-for (s,p), d in df.groupby(["station","parameter"]):
+for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
 
+    window = smooth_pressure if "Druck" in param else smooth_turbidity
+    y_s = smooth(d["value"], window)
+
+    axis = "y1" if "Druck" in param else "y2"
+
     if show_raw:
-        fig.add_trace(go.Scatter(x=d["time"], y=d["value"], opacity=0.2, showlegend=False))
+        fig.add_trace(go.Scatter(x=d["time"], y=d["value"], mode="lines", opacity=0.25, showlegend=False, yaxis=axis))
 
-    fig.add_trace(go.Scatter(x=d["time"], y=d["value"], name=f"{s}-{p}"))
+    fig.add_trace(go.Scatter(x=d["time"], y=y_s, mode="lines", name=f"{station}-{param}", yaxis=axis))
 
-# --- externe ---
-if show_pf:
-    d = load_hnd_abfluss()
-    fig.add_trace(go.Scatter(x=d["time"], y=d["abfluss"], name="PF Abfluss", line=dict(color="black"), yaxis="y3"))
+# Abfluss
+if show_hnd:
+    dfa = load_hnd_abfluss()
+    if not dfa.empty:
+        fig.add_trace(go.Scatter(x=dfa["time"], y=dfa["abfluss"], name="Abfluss", line=dict(color="black"), yaxis="y3"))
 
+# Regen
 if show_rain:
-    d = load_rain()
-    fig.add_trace(go.Bar(x=d["time"], y=d["rain"], name="Regen", opacity=0.3, yaxis="y4"))
+    dfr = load_rain_mistelgau()
+    if not dfr.empty:
+        fig.add_trace(go.Bar(x=dfr["time"], y=dfr["rain"], name="Regen", opacity=0.3, yaxis="y4"))
 
-if show_bm_a or show_bm_s:
-    d = load_bm()
-    
-    if show_bm_a:
-        fig.add_trace(go.Scatter(x=d["time"], y=d["abfluss"], name="BM Abfluss", line=dict(color="blue"), yaxis="y3"))
-
-    if show_bm_s:
-        fig.add_trace(go.Scatter(x=d["time"], y=d["schweb"], name="BM Schwebstoff", line=dict(color="brown"), yaxis="y2"))
+# Schwebstoff
+if show_schweb:
+    dfs = load_schwebstoff()
+    if not dfs.empty:
+        fig.add_trace(go.Scatter(x=dfs["time"], y=dfs["schweb"], name="Schwebstoff", line=dict(color="brown"), yaxis="y2"))
 
 # Layout
 fig.update_layout(
@@ -184,21 +233,31 @@ fig.update_layout(
 st.plotly_chart(fig, width="stretch")
 
 # -----------------------------
-# EXPORT
+# EXPORT (FIX)
 # -----------------------------
-st.subheader("Export")
+st.subheader("⬇️ Datenexport")
 
-station = st.selectbox("Station", stations)
+col1, col2, col3 = st.columns(3)
 
-df_e = df[df["station"]==station]
-tv = df_e["time"].dropna()
+with col1:
+    export_station = st.selectbox("Station wählen", stations)
 
-if tv.empty:
+df_f = df[df["station"] == export_station]
+time_valid = df_f["time"].dropna()
+
+if time_valid.empty:
+    st.warning("Keine Zeitdaten")
     st.stop()
 
-start = st.datetime_input("Start", tv.min())
-end   = st.datetime_input("Ende", tv.max())
+with col2:
+    start = st.datetime_input("Start", time_valid.min())
 
-out = df_e[(df_e["time"]>=start)&(df_e["time"]<=end)]
+with col3:
+    end = st.datetime_input("Ende", time_valid.max())
 
-st.download_button("CSV", out.to_csv(index=False), f"{station}.csv")
+exp = df_f[(df_f["time"] >= start) & (df_f["time"] <= end)]
+
+if not exp.empty:
+    st.download_button("CSV", exp.to_csv(index=False), f"{export_station}.csv")
+else:
+    st.warning("Keine Daten")
