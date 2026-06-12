@@ -43,7 +43,7 @@ def load_data():
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_hnd_abfluss():
-    url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&"
+    url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&von=01.01.2025&bis=31.12.2026"
     tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
     df_hnd = tables[0]
 
