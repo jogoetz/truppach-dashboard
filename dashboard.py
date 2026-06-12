@@ -146,6 +146,10 @@ df = df_all[
 
 df_bm = load_behringersmuehle() if (show_bm_abfluss or show_bm_schweb) else None
 
+if df_bm is not None:
+    st.write("DEBUG BM Daten:")
+    st.write(df_bm.head(20))
+
 # -----------------------------
 # HELPER
 # -----------------------------
