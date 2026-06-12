@@ -222,9 +222,18 @@ if show_hnd:
 if show_bm_abfluss and df_bm is not None:
     fig.add_trace(go.Scatter(x=df_bm["time"], y=df_bm["abfluss_bm"], name="Abfluss BM", yaxis="y3"))
 
+
 # Schwebstoff
 if show_bm_schweb and df_bm is not None:
-    fig.add_trace(go.Scatter(x=df_bm["time"], y=df_bm["schweb_bm"], name="Schwebstoff BM", yaxis="y4"))
+    fig.add_trace(go.Scatter(
+        x=df_bm["time"],
+        y=df_bm["schweb_bm"],
+        name="Schwebstoff BM",
+        yaxis="y4",
+        line=dict(color="brown", width=2),   # ✅ WICHTIG
+        opacity=0.8                          # ✅ optional, sehr hilfreich
+    ))
+
 
 # ✅ 4 ACHSEN
 fig.update_layout(
