@@ -71,12 +71,10 @@ def load_hnd_abfluss():
 
     df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
-    df = df[df["time"].notna() & df["abfluss"].notna()]
-
-    return df
+    return df.dropna()
 
 # -----------------------------
-# ✅ BEHRINGERSMÜHLE (FIX!)
+# ✅ BEHRINGERSMÜHLE
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_behringersmuehle():
@@ -85,12 +83,11 @@ def load_behringersmuehle():
 
     try:
         tables = pd.read_html(
-        url,
-        flavor="bs4",
-        decimal=",",
-        thousands=None   # ✅ ganz wichtig!
-    )
-
+            url,
+            flavor="bs4",
+            decimal=",",
+            thousands=None
+        )
     except Exception:
         return pd.DataFrame()
 
@@ -103,24 +100,17 @@ def load_behringersmuehle():
     df = df.iloc[:, :3]
     df.columns = ["time", "schweb_bm", "abfluss_bm"]
 
-    # ✅ Datum erkennen (nur echte Datumszeilen behalten)
+    # ✅ Datum
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
 
-    # ✅ Werte konvertieren
-    df["schweb_bm"] = pd.to_numeric(
-        df["schweb_bm"].astype(str).str.replace(",", ".", regex=False),
-        errors="coerce"
-    )
+    # ✅ Zahlen korrekt
+    df["schweb_bm"] = pd.to_numeric(df["schweb_bm"], errors="coerce")
+    df["abfluss_bm"] = pd.to_numeric(df["abfluss_bm"], errors="coerce")
 
-    df["abfluss_bm"] = pd.to_numeric(
-        df["abfluss_bm"].astype(str).str.replace(",", ".", regex=False),
-        errors="coerce"
-    )
-
-    # ✅ ALLES WICHTIGE: nur gültige vollständige Zeilen
     df = df.dropna(subset=["time", "schweb_bm", "abfluss_bm"])
 
     return df
+
 # -----------------------------
 # RESET
 # -----------------------------
@@ -166,7 +156,6 @@ df = df_all[
 
 if show_bm_abfluss or show_bm_schweb:
     df_bm = load_behringersmuehle()
-    st.write(df_bm.head(10))   # ✅ DEBUG HIER
 else:
     df_bm = None
 
@@ -205,51 +194,29 @@ for (station, param), d in df.groupby(["station", "parameter"]):
     axis = "y1" if "Druck" in param else "y2"
 
     if show_raw:
-        fig.add_trace(go.Scatter(x=d["time"], y=d["value"], mode="lines", opacity=0.25, showlegend=False, yaxis=axis))
+        fig.add_trace(go.Scatter(x=d["time"], y=d["value"], opacity=0.25, showlegend=False, yaxis=axis))
 
-    fig.add_trace(go.Scatter(x=d["time"], y=y_smooth, mode="lines", name=f"{station} - {param}", yaxis=axis))
+    fig.add_trace(go.Scatter(x=d["time"], y=y_smooth, name=f"{station} - {param}", yaxis=axis))
 
 # Abfluss PF
 if show_hnd:
-    df_hnd = load_hnd_abfluss()
-    if not df_hnd.empty:
-        fig.add_trace(go.Scatter(
-            x=df_hnd["time"],
-            y=df_hnd["abfluss"],
-            mode="lines",
-            name="Abfluss (m³/s)",
-            line=dict(color="black", width=2, dash="dot"),
-            yaxis="y3"
-        ))
+    d = load_hnd_abfluss()
+    fig.add_trace(go.Scatter(x=d["time"], y=d["abfluss"], name="Abfluss PF", yaxis="y3"))
 
-# BEHRINGERSMÜHLE
-if show_bm_abfluss and df_bm is not None and not df_bm.empty:
-    fig.add_trace(go.Scatter(
-        x=df_bm["time"],
-        y=df_bm["abfluss_bm"],
-        mode="lines",
-        name="Abfluss Behringersmühle (m³/s)",
-        line=dict(color="darkblue", width=2, dash="dot"),
-        yaxis="y3"
-    ))
+# Abfluss BM
+if show_bm_abfluss and df_bm is not None:
+    fig.add_trace(go.Scatter(x=df_bm["time"], y=df_bm["abfluss_bm"], name="Abfluss BM", yaxis="y3"))
 
-if show_bm_schweb and df_bm is not None and not df_bm.empty:
-    fig.add_trace(go.Scatter(
-        x=df_bm["time"],
-        y=df_bm["schweb_bm"],
-        mode="lines",
-        name="Schwebstoff Behringersmühle (g/m³)",
-        line=dict(color="brown", width=2),
-        yaxis="y4"
-    ))
+# Schwebstoff BM
+if show_bm_schweb and df_bm is not None:
+    fig.add_trace(go.Scatter(x=df_bm["time"], y=df_bm["schweb_bm"], name="Schwebstoff BM", yaxis="y2"))
 
 fig.update_layout(
     height=600,
     xaxis_title="Zeit",
-    yaxis=dict(title="Druck (psi)", side="left", type=scale_pressure),
-    yaxis2=dict(title="Trübung (NTU)", overlaying="y", side="right", type=scale_turbidity),
-    yaxis3=dict(title="Abfluss (m³/s)", overlaying="y", side="right", position=0.92),
-    yaxis4=dict(title="Schwebstoffkonzentration (g/m³)", overlaying="y", side="right", position=1.0)
+    yaxis=dict(title="Druck (psi)", side="left"),
+    yaxis2=dict(title="Trübung / Schwebstoff", overlaying="y", side="right"),
+    yaxis3=dict(title="Abfluss (m³/s)", overlaying="y", side="right", position=0.9),
 )
 
 st.plotly_chart(fig, width="stretch")
