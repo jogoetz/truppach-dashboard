@@ -92,25 +92,29 @@ def load_behringersmuehle():
 
     df = max(tables, key=lambda x: x.shape[0])
 
-    # ✅ Spalte 0 = Datum
+    # ✅ mindestens 4 Spalten nötig
+    if df.shape[1] < 4:
+        return pd.DataFrame()
+
+    # ✅ exakt die richtigen Spalten nehmen
+    df = df.iloc[:, :4]
+
     df["time"] = df.iloc[:, 0]
+    df["schweb_bm"] = df.iloc[:, 2]   # ✅ Schwebstoff
+    df["abfluss_bm"] = df.iloc[:, 3]  # ✅ Abfluss
 
-    # ✅ ALLE anderen Zellen zusammenziehen
-    df["raw"] = df.astype(str).agg(" ".join, axis=1)
-
-    # ✅ beide Zahlen extrahieren
-    numbers = df["raw"].str.replace(",", ".", regex=False).str.findall(r"\d+\.\d+")
-
-    # ✅ erste Zahl = Schwebstoff
-    df["schweb_bm"] = numbers.str[0].astype(float)
-
-    # ✅ zweite Zahl = Abfluss
-    df["abfluss_bm"] = numbers.str[1].astype(float)
-
-    # ✅ Zeit parsen
+    # ✅ Zeit
+    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
 
-    # ✅ sauber filtern
+    # ✅ Werte (nur Komma → Punkt)
+    df["schweb_bm"] = df["schweb_bm"].astype(str).str.replace(",", ".", regex=False)
+    df["schweb_bm"] = pd.to_numeric(df["schweb_bm"], errors="coerce")
+
+    df["abfluss_bm"] = df["abfluss_bm"].astype(str).str.replace(",", ".", regex=False)
+    df["abfluss_bm"] = pd.to_numeric(df["abfluss_bm"], errors="coerce")
+
+    # ✅ filtern
     df = df[
         df["time"].notna() &
         df["schweb_bm"].notna() &
