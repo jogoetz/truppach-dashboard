@@ -103,21 +103,20 @@ st.subheader("📈 Daten")
 fig = go.Figure()
 
 # ✅ Wartungsbalken (mit Tooltip)
+
 if show_maintenance:
     for d in maintenance_dates:
-        fig.add_vrect(
+        fig.add_shape(
+            type="rect",
             x0=d,
             x1=d + pd.Timedelta(days=1),
+            y0=0,
+            y1=1,
+            yref="paper",
             fillcolor="gray",
             opacity=0.25,
             line_width=0,
-            layer="below",
-            annotation_text="Wartung",
-            annotation_position="top left",
-            annotation=dict(
-                font=dict(color="gray"),
-                bgcolor="rgba(255,255,255,0.6)"
-            )
+            layer="below"
         )
 
 base_colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
