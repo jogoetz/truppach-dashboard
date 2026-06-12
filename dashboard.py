@@ -113,15 +113,24 @@ def load_behringersmuehle():
     df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
 
-    # ✅ Schwebstoff (Komma → Punkt)
-    df["schweb_bm"] = df["schweb_bm"].astype(str)
-    df["schweb_bm"] = df["schweb_bm"].str.replace(",", ".", regex=False)
-    df["schweb_bm"] = pd.to_numeric(df["schweb_bm"], errors="coerce")
+    
+    # ✅ Schwebstoff
+    df["schweb_bm"] = (
+    df["schweb_bm"]
+    .astype(str)
+    .str.replace(",", ".", regex=False)
+    .str.extract(r"([-+]?\d*\.?\d+)")[0]   # ✅ nur die Zahl rausziehen
+    .astype(float)
+    )
 
-    # ✅ Abfluss (Komma → Punkt)
-    df["abfluss_bm"] = df["abfluss_bm"].astype(str)
-    df["abfluss_bm"] = df["abfluss_bm"].str.replace(",", ".", regex=False)
-    df["abfluss_bm"] = pd.to_numeric(df["abfluss_bm"], errors="coerce")
+    # ✅ Abfluss
+    df["abfluss_bm"] = (
+    df["abfluss_bm"]
+    .astype(str)
+    .str.replace(",", ".", regex=False)
+    .str.extract(r"([-+]?\d*\.?\d+)")[0]   # ✅ nur die Zahl rausziehen
+    .astype(float)
+    )
 
     # ✅ filtern
     df = df[
