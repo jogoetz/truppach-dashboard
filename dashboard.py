@@ -80,6 +80,7 @@ def load_hnd_abfluss():
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_behringersmuehle():
+
     url = "https://www.gkd.bayern.de/de/fluesse/schwebstoff/regnitz/behringersmuehle-24241710/gesamtzeitraum/tabelle?zr=gesamt&parameter=konzentration&parameterNr=14&beginn=01.01.2025&ende=11.06.2026"
 
     try:
@@ -90,44 +91,30 @@ def load_behringersmuehle():
     if not tables:
         return pd.DataFrame()
 
-    df_raw = max(tables, key=lambda x: x.shape[0])
+    df = max(tables, key=lambda x: x.shape[0])
 
-    rows = []
-    current_date = None
+    # ✅ nur relevante Spalten
+    df = df.iloc[:, :3]
+    df.columns = ["time", "schweb_bm", "abfluss_bm"]
 
-    # ✅ ZEILENWEISE interpretieren
-    for _, row in df_raw.iterrows():
+    # ✅ Datum erkennen (nur echte Datumszeilen behalten)
+    df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
 
-        values = [str(x).strip() for x in row if str(x).strip() != "nan"]
+    # ✅ Werte konvertieren
+    df["schweb_bm"] = pd.to_numeric(
+        df["schweb_bm"].astype(str).str.replace(",", ".", regex=False),
+        errors="coerce"
+    )
 
-        if not values:
-            continue
+    df["abfluss_bm"] = pd.to_numeric(
+        df["abfluss_bm"].astype(str).str.replace(",", ".", regex=False),
+        errors="coerce"
+    )
 
-        # ✅ Datum erkennen
-        if "." in values[0]:
-            try:
-                current_date = pd.to_datetime(values[0], dayfirst=True)
-                continue
-            except:
-                pass
+    # ✅ ALLES WICHTIGE: nur gültige vollständige Zeilen
+    df = df.dropna(subset=["time", "schweb_bm", "abfluss_bm"])
 
-        # ✅ Zahlen sammeln
-        if current_date is not None:
-            nums = [v.replace(",", ".") for v in values]
-
-            if len(nums) == 1:
-                rows.append({"time": current_date, "schweb_bm": float(nums[0]), "abfluss_bm": None})
-            elif len(nums) >= 2:
-                rows.append({"time": current_date, "schweb_bm": float(nums[0]), "abfluss_bm": float(nums[1])})
-
-                current_date = None  # ✅ fertig für nächste Zeile
-
-    df = pd.DataFrame(rows)
-
-    # ✅ nur vollständige Paare behalten
-    df = df.dropna()
-
-    return df    
+    return df
 # -----------------------------
 # RESET
 # -----------------------------
