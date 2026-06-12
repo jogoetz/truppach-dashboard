@@ -82,6 +82,71 @@ def load_hnd_abfluss():
     df = df[df["time"].notna() & df["abfluss"].notna()]
 
     return df
+
+
+# -----------------------------
+# ✅ BEHRINGERSMÜHLE (GKD: ABFLUSS + SCHWEBSTOFF)
+# -----------------------------
+@st.cache_data(ttl=600)
+def load_behringersmuehle():
+    url = "https://www.gkd.bayern.de/de/fluesse/schwebstoff/regnitz/behringersmuehle-24241710/gesamtzeitraum/tabelle?zr=gesamt&parameter=konzentration&parameterNr=14&beginn=01.01.2025&ende=11.06.2026"
+
+    try:
+        tables = pd.read_html(url, flavor="bs4")
+    except Exception:
+        return pd.DataFrame()
+
+    if not tables:
+        return pd.DataFrame()
+
+    df = max(tables, key=lambda x: x.shape[0])
+
+    if df.shape[1] < 3:
+        return pd.DataFrame()
+
+    cols = list(df.columns)
+
+    time_col = cols[0]
+
+    # ✅ Spalten automatisch erkennen
+    abfluss_col = None
+    schweb_col = None
+
+    for c in cols:
+        c_str = str(c).lower()
+        if "abfluss" in c_str:
+            abfluss_col = c
+        if "konzentration" in c_str or "schweb" in c_str:
+            schweb_col = c
+
+    # Fallback (falls HND Struktur abweicht)
+    if abfluss_col is None and len(cols) > 1:
+        abfluss_col = cols[1]
+    if schweb_col is None and len(cols) > 2:
+        schweb_col = cols[2]
+
+    df = df[[time_col, abfluss_col, schweb_col]]
+    df.columns = ["time", "abfluss_bm", "schweb_bm"]
+
+    # Datum
+    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
+    df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
+
+    # Werte
+    for col in ["abfluss_bm", "schweb_bm"]:
+        df[col] = (
+            df[col]
+            .astype(str)
+            .str.replace(",", ".", regex=False)
+            .str.extract(r"([-+]?\d*\.?\d+)")[0]
+            .astype(float)
+        )
+
+    df = df[df["time"].notna()]
+
+    return df
+
+
 # -----------------------------
 # RESET
 # -----------------------------
@@ -112,9 +177,11 @@ sel_params = st.sidebar.multiselect("Parameter", params, params)
 smooth_pressure = st.sidebar.slider("Glättung Druck", 1, 200, 10)
 smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
 
-show_raw = st.sidebar.checkbox("Rohdaten anzeigen", True)
-show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", True)
-show_hnd = st.sidebar.checkbox("🌊 Abfluss Pegel Plankenfels", True)
+show_raw = st.sidebar.checkbox("Rohdaten anzeigen", False)
+show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", False)
+show_hnd = st.sidebar.checkbox("🌊 Abfluss Plankenfels", False)
+show_bm_abfluss = st.sidebar.checkbox("🌊 Abfluss Behringersmühle", False)
+show_bm_schweb  = st.sidebar.checkbox("🟤 Schwebstoff Behringersmühle (g/m³)", False)
 
 scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
 scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
@@ -124,6 +191,11 @@ df = df_all[
     (df_all["station"].isin(sel_stations)) &
     (df_all["parameter"].isin(sel_params))
 ]
+
+if show_bm_abfluss or show_bm_schweb:
+    df_bm = load_behringersmuehle()
+else:
+    df_bm = None
 
 # -----------------------------
 # HELPER
@@ -176,6 +248,30 @@ if show_hnd:
             line=dict(color="black", width=2, dash="dot"),
             yaxis="y3"
         ))
+
+
+# Behringersmühle Abfluss
+if show_bm_abfluss and df_bm is not None and not df_bm.empty:
+    fig.add_trace(go.Scatter(
+        x=df_bm["time"],
+        y=df_bm["abfluss_bm"],
+        mode="lines",
+        name="Abfluss Behringersmühle (m³/s)",
+        line=dict(color="darkblue", width=2, dash="dot"),
+        yaxis="y3"
+    ))
+
+# Behringersmühle Schwebstoff
+if show_bm_schweb and df_bm is not None and not df_bm.empty:
+    fig.add_trace(go.Scatter(
+        x=df_bm["time"],
+        y=df_bm["schweb_bm"],
+        mode="lines",
+        name="Schwebstoff Behringersmühle (g/m³)",
+        line=dict(color="brown", width=2),
+        yaxis="y2"
+    ))
+
 
 # Layout
 fig.update_layout(
