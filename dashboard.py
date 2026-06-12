@@ -92,37 +92,43 @@ def load_behringersmuehle():
 
     df = max(tables, key=lambda x: x.shape[0])
 
-    # ✅ mindestens 4 Spalten nötig
-    if df.shape[1] < 4:
-        return pd.DataFrame()
+    # ✅ nur die ersten 3 Spalten (Datum, Konzentration, Abfluss)
+    df = df.iloc[:, :3]
+    df.columns = ["time", "schweb_bm", "abfluss_bm"]
 
-    # ✅ exakt die richtigen Spalten nehmen
-    df = df.iloc[:, :4]
-
-    df["time"] = df.iloc[:, 0]
-    df["schweb_bm"] = df.iloc[:, 2]   # ✅ Schwebstoff
-    df["abfluss_bm"] = df.iloc[:, 3]  # ✅ Abfluss
-
-    # ✅ Zeit
-    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
+    # ✅ Datum sauber parsen
+    df["time"] = (
+        df["time"]
+        .astype(str)
+        .str.replace(r"\(.*\)", "", regex=True)
+        .str.strip()
+    )
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
 
-    # ✅ Werte (nur Komma → Punkt)
-    df["schweb_bm"] = df["schweb_bm"].astype(str).str.replace(",", ".", regex=False)
+    # ✅ Werte konvertieren (nur Komma!)
+    df["schweb_bm"] = (
+        df["schweb_bm"]
+        .astype(str)
+        .str.replace(",", ".", regex=False)
+    )
     df["schweb_bm"] = pd.to_numeric(df["schweb_bm"], errors="coerce")
 
-    df["abfluss_bm"] = df["abfluss_bm"].astype(str).str.replace(",", ".", regex=False)
+    df["abfluss_bm"] = (
+        df["abfluss_bm"]
+        .astype(str)
+        .str.replace(",", ".", regex=False)
+    )
     df["abfluss_bm"] = pd.to_numeric(df["abfluss_bm"], errors="coerce")
 
-    # ✅ filtern
+    # ✅ WICHTIG: nur vollständige Datensätze behalten
     df = df[
         df["time"].notna() &
         df["schweb_bm"].notna() &
         df["abfluss_bm"].notna()
     ]
 
-    return df[["time", "schweb_bm", "abfluss_bm"]]
-
+    return df
+    
 # -----------------------------
 # RESET
 # -----------------------------
