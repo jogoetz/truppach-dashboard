@@ -76,6 +76,15 @@ def load_gkd_abfluss():
 
     return df.dropna()
 
+
+# ✅ DEBUG (HIER!)
+    st.write(df.head())
+    st.write("Zeitraum:", df["time"].min(), "→", df["time"].max())
+    st.write("Anzahl Punkte:", len(df))
+
+    return df
+
+
 # -----------------------------
 # RESET
 # -----------------------------
