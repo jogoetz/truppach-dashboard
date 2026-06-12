@@ -1,7 +1,6 @@
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
-from bs4 import BeautifulSoup
 import requests
 import io
 
@@ -29,22 +28,30 @@ maintenance_dates = [
 maintenance_dates = pd.to_datetime(maintenance_dates, dayfirst=True)
 
 # -----------------------------
-# LOAD
+# LOAD MAIN DATA
 # -----------------------------
 @st.cache_data
 def load_data():
-    try:
-        r = requests.get(PARQUET_URL)
-        r.raise_for_status()
-    except Exception as e:
-        st.error(f"Fehler beim Laden der Daten: {e}")
-        return None
-
+    r = requests.get(PARQUET_URL)
+    r.raise_for_status()
     df = pd.read_parquet(io.BytesIO(r.content))
     df["time"] = pd.to_datetime(df["time"], errors="coerce")
     return df
 
-df = load_data()
+# -----------------------------
+# ✅ HND DATA
+# -----------------------------
+@st.cache_data(ttl=600)
+def load_hnd_abfluss():
+    url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&"
+    tables = pd.read_html(url, decimal=",", thousands=".")
+    df_hnd = tables[0]
+
+    df_hnd.columns = ["time", "abfluss"]
+    df_hnd["time"] = pd.to_datetime(df_hnd["time"], dayfirst=True)
+    df_hnd["abfluss"] = pd.to_numeric(df_hnd["abfluss"], errors="coerce")
+
+    return df_hnd.dropna()
 
 # -----------------------------
 # RESET
@@ -76,11 +83,11 @@ smooth_pressure = st.sidebar.slider("Glättung Druck", 1, 200, 10)
 smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
 
 show_raw = st.sidebar.checkbox("Rohdaten anzeigen", True)
-
-# ✅ NEU: Wartung ein/aus
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", True)
 
-# Achsenskalierung
+# ✅ NEU: HND Abfluss
+show_hnd = st.sidebar.checkbox("🌊 Abfluss Pegel Plankenfels", False)
+
 scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
 scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
 
@@ -99,11 +106,9 @@ def smooth(series, window):
 # ✅ PLOT
 # -----------------------------
 st.subheader("📈 Daten")
-
 fig = go.Figure()
 
-# ✅ Wartungsbalken (mit Tooltip)
-
+# Wartung
 if show_maintenance:
     for d in maintenance_dates:
         fig.add_shape(
@@ -122,6 +127,7 @@ if show_maintenance:
 base_colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
 color_map = {s: base_colors[i % 4] for i, s in enumerate(stations)}
 
+# Hauptdaten
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
 
@@ -130,7 +136,6 @@ for (station, param), d in df.groupby(["station", "parameter"]):
 
     axis = "y1" if "Druck" in param else "y2"
     color = color_map.get(station, "#000000")
-
     dash = "dash" if "Druck" in param else "solid"
 
     if show_raw:
@@ -158,11 +163,33 @@ for (station, param), d in df.groupby(["station", "parameter"]):
         )
     )
 
+# ✅ HND Abfluss hinzufügen
+if show_hnd:
+    df_hnd = load_hnd_abfluss()
+
+    df_hnd = df_hnd[
+        (df_hnd["time"] >= df["time"].min()) &
+        (df_hnd["time"] <= df["time"].max())
+    ]
+
+    fig.add_trace(
+        go.Scatter(
+            x=df_hnd["time"],
+            y=df_hnd["abfluss"],
+            mode="lines",
+            name="Abfluss HND (m³/s)",
+            line=dict(color="black", width=2, dash="dot"),
+            yaxis="y3"
+        )
+    )
+
+# Layout
 fig.update_layout(
     height=600,
     xaxis_title="Zeit",
     yaxis=dict(title="Druck (psi)", side="left", type=scale_pressure),
     yaxis2=dict(title="Trübung (NTU)", overlaying="y", side="right", type=scale_turbidity),
+    yaxis3=dict(title="Abfluss (m³/s)", overlaying="y", side="right", position=0.92),
     legend=dict(
         x=1.05,
         y=1,
@@ -194,15 +221,11 @@ map_df = pd.DataFrame([
 ])
 
 fig_map = go.Figure()
-
 fig_map.add_trace(go.Scattermapbox(
     lat=map_df["lat"],
     lon=map_df["lon"],
     mode="markers",
-    marker=dict(
-        size=14,
-        color=[color_map.get(s, "#888888") for s in map_df["station"]],
-    ),
+    marker=dict(size=14, color=[color_map.get(s, "#888888") for s in map_df["station"]]),
     text=map_df["station"],
     hovertemplate="<b>%{text}</b><extra></extra>"
 ))
@@ -210,10 +233,7 @@ fig_map.add_trace(go.Scattermapbox(
 fig_map.update_layout(
     mapbox_style="open-street-map",
     mapbox_zoom=11,
-    mapbox_center=dict(
-        lat=map_df["lat"].mean(),
-        lon=map_df["lon"].mean()
-    ),
+    mapbox_center=dict(lat=map_df["lat"].mean(), lon=map_df["lon"].mean()),
     height=400,
     margin=dict(l=0, r=0, t=0, b=0)
 )
@@ -244,11 +264,6 @@ export_df = df[
 
 if not export_df.empty:
     csv = export_df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        "📥 CSV herunterladen",
-        csv,
-        f"{export_station}_export.csv",
-        "text/csv"
-    )
+    st.download_button("📥 CSV herunterladen", csv, f"{export_station}_export.csv", "text/csv")
 else:
     st.warning("Keine Daten im gewählten Zeitraum")
