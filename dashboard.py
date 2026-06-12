@@ -227,9 +227,17 @@ fig.update_layout(
     yaxis=dict(title="Druck (psi)", side="left", type=scale_pressure),
     yaxis2=dict(title="Trübung (NTU)", overlaying="y", side="right", type=scale_turbidity),
     yaxis3=dict(title="Abfluss (m³/s)", overlaying="y", side="right", position=0.95),
-    yaxis4=dict(title="Schwebstoff (g/m³)", overlaying="y", side="left", position=0.05),
+    
+    yaxis4=dict(
+        title="Schwebstoff (g/m³)",
+        overlaying="y",
+        side="left",
+        position=0.02,   # weiter nach außen
+        anchor="x"       # wichtig!
+    ),
 
-    margin=dict(l=80, r=80)
+    margin=dict(l=120, r=80)   # mehr Platz links
+
 )
 
 st.plotly_chart(fig, use_container_width=True)
