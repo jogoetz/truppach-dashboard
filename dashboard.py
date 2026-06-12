@@ -42,16 +42,26 @@ def load_data():
 # ✅ HND DATA
 # -----------------------------
 @st.cache_data(ttl=600)
-def load_hnd_abfluss():
-    url = "https://www.gkd.bayern.de/de/fluesse/abfluss/bayern/plankenfels-24244504/messwerte.csv"
-    # url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&von=01.01.2025&bis=31.12.2026"
+def load_gkd_abfluss():
+    url = "https://www.gkd.bayern.de/de/fluesse/abfluss/bayern/plankenfels-24244504/messwerte?zr=alle&beginn=01.01.2025&ende=12.06.2026"
 
-    df = pd.read_csv(url, sep=";", decimal=",")
+    tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
 
-    # Spalten bereinigen (robust gegen Änderungen)
+    # ✅ passende Tabelle finden (nicht blind tables[0])
+    df = None
+    for t in tables:
+        if t.shape[1] >= 2:
+            df = t
+            break
+
+    if df is None:
+        return pd.DataFrame()
+
+    # ✅ erste 2 Spalten nehmen
     df = df.iloc[:, :2]
     df.columns = ["time", "abfluss"]
 
+    # ✅ konvertieren
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
     df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
