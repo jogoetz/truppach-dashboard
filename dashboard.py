@@ -219,20 +219,33 @@ if show_hnd:
     d = load_hnd_abfluss()
     fig.add_trace(go.Scatter(x=d["time"], y=d["abfluss"], name="Abfluss PF", yaxis="y3"))
 
+
+# Abfluss BM
 if show_bm_abfluss and df_bm is not None:
-    fig.add_trace(go.Scatter(x=df_bm["time"], y=df_bm["abfluss_bm"], name="Abfluss BM", yaxis="y3"))
+    d_abf = df_bm.dropna(subset=["time", "abfluss_bm"])
 
-
-# Schwebstoff
-if show_bm_schweb and df_bm is not None:
     fig.add_trace(go.Scatter(
-        x=df_bm["time"],
-        y=df_bm["schweb_bm"],
+        x=d_abf["time"],
+        y=d_abf["abfluss_bm"],
+        name="Abfluss BM",
+        yaxis="y3",
+        line=dict(color="black", width=2)
+    ))
+
+
+# Schwebstoff BM
+if show_bm_schweb and df_bm is not None:
+    d_sch = df_bm.dropna(subset=["time", "schweb_bm"])
+
+    fig.add_trace(go.Scatter(
+        x=d_sch["time"],
+        y=d_sch["schweb_bm"],
         name="Schwebstoff BM",
         yaxis="y4",
-        line=dict(color="brown", width=2),   # ✅ WICHTIG
-        opacity=0.8                          # ✅ optional, sehr hilfreich
+        line=dict(color="brown", width=2),
+        opacity=0.8
     ))
+
 
 
 # ✅ 4 ACHSEN
