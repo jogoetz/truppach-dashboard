@@ -97,7 +97,7 @@ def load_behringersmuehle():
     df["schweb_bm"] = pd.to_numeric(df["schweb_bm"], errors="coerce")
     df["abfluss_bm"] = pd.to_numeric(df["abfluss_bm"], errors="coerce")
 
-    df = df.dropna(subset=["time", "schweb_bm", "abfluss_bm"])
+    df = df.dropna(subset=["time"])   # ✅ nur Zeit notwendig!
 
     return df
 
