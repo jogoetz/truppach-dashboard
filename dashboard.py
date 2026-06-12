@@ -134,7 +134,7 @@ show_raw = st.sidebar.checkbox("Rohdaten anzeigen", False)
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", False)
 show_hnd = st.sidebar.checkbox("🌊 Abfluss Plankenfels", False)
 show_bm_abfluss = st.sidebar.checkbox("🌊 Abfluss Behringersmühle", False)
-show_bm_schweb  = st.sidebar.checkbox("🟤 Schwebstoff Behringersmühle (g/m³)", False)
+show_bm_schweb  = st.sidebar.checkbox("🟤 Schwebstoff Behringersmühle", False)
 
 scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
 scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
