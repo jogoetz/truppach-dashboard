@@ -5,3 +5,5 @@ requests
 pyarrow
 beautifulsoup4
 streamlit-plotly-events
+lxml
+html5lib
