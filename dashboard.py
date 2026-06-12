@@ -185,18 +185,41 @@ if show_maintenance:
             line_width=0
         )
 
+
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
 
-    window = smooth_pressure if "Druck" in param else smooth_turbidity
+    is_pressure = "Druck" in param
+
+    window = smooth_pressure if is_pressure else smooth_turbidity
     y_smooth = smooth(d["value"], window)
 
-    axis = "y1" if "Druck" in param else "y2"
+    axis = "y1" if is_pressure else "y2"
 
+    color = color_map.get(station, "#888888")
+
+    # Rohdaten
     if show_raw:
-        fig.add_trace(go.Scatter(x=d["time"], y=d["value"], opacity=0.25, showlegend=False, yaxis=axis))
+        fig.add_trace(go.Scatter(
+            x=d["time"],
+            y=d["value"],
+            opacity=0.25,
+            showlegend=False,
+            line=dict(color=color, dash="dot"),
+            yaxis=axis
+        ))
 
-    fig.add_trace(go.Scatter(x=d["time"], y=y_smooth, name=f"{station} - {param}", yaxis=axis))
+    # Hauptlinie
+    fig.add_trace(go.Scatter(
+        x=d["time"],
+        y=y_smooth,
+        name=f"{station} - {param}",
+        line=dict(
+            color=color,
+            dash="dot" if is_pressure else "solid"   # ✅ HIER IST DER KEY
+        ),
+        yaxis=axis
+    ))
 
 # Abfluss PF
 if show_hnd:
