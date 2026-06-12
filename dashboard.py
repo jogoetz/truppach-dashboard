@@ -240,7 +240,7 @@ if show_bm_schweb and df_bm is not None and not df_bm.empty:
         mode="lines",
         name="Schwebstoff Behringersmühle (g/m³)",
         line=dict(color="brown", width=2),
-        yaxis="y2"
+        yaxis="y4"
     ))
 
 fig.update_layout(
@@ -248,7 +248,8 @@ fig.update_layout(
     xaxis_title="Zeit",
     yaxis=dict(title="Druck (psi)", side="left", type=scale_pressure),
     yaxis2=dict(title="Trübung (NTU)", overlaying="y", side="right", type=scale_turbidity),
-    yaxis3=dict(title="Abfluss (m³/s)", overlaying="y", side="right", position=0.92)
+    yaxis3=dict(title="Abfluss (m³/s)", overlaying="y", side="right", position=0.92),
+    yaxis4=dict(title="Schwebstoffkonzentration (g/m³)", overlaying="y", side="right", position=1.0)
 )
 
 st.plotly_chart(fig, width="stretch")
