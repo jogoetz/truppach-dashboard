@@ -45,12 +45,10 @@ def load_hnd_abfluss():
     url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&begin=01.01.2025&end=12.06.2026&setdiskr=15"
 
     tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
-
     if not tables:
         return pd.DataFrame()
 
     df = max(tables, key=lambda x: x.shape[0])
-
     if df.shape[1] < 2:
         return pd.DataFrame()
 
@@ -59,26 +57,23 @@ def load_hnd_abfluss():
 
     df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
+
     df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
-    df = df[df["time"].notna() & df["abfluss"].notna()]
-
-    return df
+    return df[df["time"].notna() & df["abfluss"].notna()]
 
 # -----------------------------
-# ✅ NIEDERSCHLAG MISTELGAU
+# ✅ NIEDERSCHLAG (RICHTIGE TABELLE!)
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_rain_mistelgau():
-    url = "https://www.hnd.bayern.de/niederschlag/regnitz/mistelbach-200113?addhr=false&days=365"
+    url = "https://www.hnd.bayern.de/niederschlag/regnitz/mistelbach-200113/tabelle?beginn=13.06.2025&ende=12.06.2026"
 
     tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
-
     if not tables:
         return pd.DataFrame()
 
     df = max(tables, key=lambda x: x.shape[0])
-
     if df.shape[1] < 2:
         return pd.DataFrame()
 
@@ -87,11 +82,10 @@ def load_rain_mistelgau():
 
     df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
+
     df["rain"] = pd.to_numeric(df["rain"], errors="coerce")
 
-    df = df[df["time"].notna() & df["rain"].notna()]
-
-    return df
+    return df[df["time"].notna() & df["rain"].notna()]
 
 # -----------------------------
 # RESET
@@ -189,7 +183,7 @@ if show_hnd:
             yaxis="y3"
         ))
 
-# ✅ Niederschlag (Bars!)
+# ✅ Niederschlag (jetzt komplett)
 if show_rain:
     df_rain = load_rain_mistelgau()
     if not df_rain.empty:
@@ -198,7 +192,7 @@ if show_rain:
             y=df_rain["rain"],
             name="Niederschlag (mm)",
             marker_color="blue",
-            opacity=0.35,
+            opacity=0.3,
             yaxis="y4"
         ))
 
@@ -216,7 +210,7 @@ fig.update_layout(
 st.plotly_chart(fig, width="stretch")
 
 # -----------------------------
-# EXPORT (FIXED)
+# ✅ EXPORT (ROBUST)
 # -----------------------------
 st.subheader("⬇️ Datenexport")
 
