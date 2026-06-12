@@ -63,7 +63,7 @@ def load_hnd_abfluss():
     return df[df["time"].notna() & df["abfluss"].notna()]
 
 # -----------------------------
-# ✅ NIEDERSCHLAG (RICHTIGE TABELLE!)
+# ✅ NIEDERSCHLAG
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_rain_mistelgau():
@@ -119,7 +119,7 @@ smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
 show_raw = st.sidebar.checkbox("Rohdaten anzeigen", True)
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", True)
 show_hnd = st.sidebar.checkbox("🌊 Abfluss Plankenfels (HND, m³/s)", True)
-show_rain = st.sidebar.checkbox("🌧️ Niederschlag Mistelgau (7 Tage", True)
+show_rain = st.sidebar.checkbox("🌧️ Niederschlag Mistelgau (7 Tage)", True)
 
 scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
 scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
