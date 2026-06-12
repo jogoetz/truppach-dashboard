@@ -38,42 +38,29 @@ def load_data():
     return df.dropna(subset=["time"])
 
 # -----------------------------
-# ✅ HND ABFLUSS (STABIL)
+# HND ABFLUSS
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_hnd_abfluss():
     url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&begin=01.01.2025&end=12.06.2026&setdiskr=15"
 
-    tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
+    tables = pd.read_html(url, flavor="bs4")
 
     if not tables:
         return pd.DataFrame()
 
-    # größte Tabelle wählen
     df = max(tables, key=lambda x: x.shape[0])
 
-    # Sicherheitscheck
     if df.shape[1] < 2:
         return pd.DataFrame()
 
-    # erste 2 Spalten = Zeit + Abfluss
     df = df.iloc[:, :2]
     df.columns = ["time", "abfluss"]
 
-    # Datum bereinigen
-    df["time"] = df["time"].astype(str)
-    df["time"] = df["time"].str.replace(r"\(.*\)", "", regex=True).str.strip()
-
-    # Datum parsen
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
-
-    # Abfluss parsen
     df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
-    # gültige Werte behalten
-    df = df[df["time"].notna() & df["abfluss"].notna()]
-
-    return df
+    return df.dropna()
 
 # -----------------------------
 # RESET
@@ -82,17 +69,18 @@ if st.sidebar.button("🔄 Daten neu laden"):
     st.cache_data.clear()
     st.rerun()
 
-df = load_data()
+# ✅ WICHTIG: Original-Daten separat behalten!
+df_all = load_data()
 
-if df.empty:
+if df_all.empty:
     st.error("❌ Keine Daten gefunden")
     st.stop()
 
 # -----------------------------
 # FILTER
 # -----------------------------
-stations = sorted(df["station"].unique())
-params = sorted(df["parameter"].unique())
+stations = sorted(df_all["station"].unique())
+params = sorted(df_all["parameter"].unique())
 
 default_selection = stations
 if st.session_state.selected_station_map:
@@ -111,13 +99,14 @@ show_hnd = st.sidebar.checkbox("🌊 Abfluss Pegel Plankenfels", True)
 scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
 scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
 
-df = df[
-    (df["station"].isin(sel_stations)) &
-    (df["parameter"].isin(sel_params))
+# ✅ NUR fürs Plotten gefiltert
+df = df_all[
+    (df_all["station"].isin(sel_stations)) &
+    (df_all["parameter"].isin(sel_params))
 ]
 
 # -----------------------------
-# HELPERS
+# HELPER
 # -----------------------------
 def smooth(series, window):
     return series.rolling(window, min_periods=1).mean()
@@ -142,8 +131,6 @@ if show_maintenance:
             line_width=0
         )
 
-base_colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
-
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
 
@@ -157,10 +144,9 @@ for (station, param), d in df.groupby(["station", "parameter"]):
 
     fig.add_trace(go.Scatter(x=d["time"], y=y_smooth, mode="lines", name=f"{station} - {param}", yaxis=axis))
 
-# ✅ HND Abfluss
+# Abfluss
 if show_hnd:
     df_hnd = load_hnd_abfluss()
-
     if not df_hnd.empty:
         fig.add_trace(go.Scatter(
             x=df_hnd["time"],
@@ -170,8 +156,6 @@ if show_hnd:
             line=dict(color="black", width=2, dash="dot"),
             yaxis="y3"
         ))
-    else:
-        st.warning("Keine Abflussdaten verfügbar")
 
 # Layout
 fig.update_layout(
@@ -185,7 +169,53 @@ fig.update_layout(
 st.plotly_chart(fig, width="stretch")
 
 # -----------------------------
-# ✅ EXPORT (FINAL FIX)
+# ✅ KARTE (WIEDER DRIN)
+# -----------------------------
+st.subheader("🗺️ Messstationen")
+
+station_coords = {
+    "Plankenfels": [49.8791, 11.3350],
+    "Geislareuth": [49.9222, 11.4217],
+    "Seitenbach": [49.9151, 11.3986],
+    "Wehr": [49.9156, 11.3969]
+}
+
+map_df = pd.DataFrame([
+    {"station": s, "lat": c[0], "lon": c[1]}
+    for s, c in station_coords.items()
+])
+
+fig_map = go.Figure()
+
+fig_map.add_trace(go.Scattermapbox(
+    lat=map_df["lat"],
+    lon=map_df["lon"],
+    mode="markers+text",
+    text=map_df["station"],
+    marker=dict(size=14, color="blue")
+))
+
+fig_map.update_layout(
+    mapbox_style="open-street-map",
+    mapbox_zoom=11,
+    mapbox_center=dict(
+        lat=map_df["lat"].mean(),
+        lon=map_df["lon"].mean()
+    ),
+    height=400,
+    margin=dict(l=0, r=0, t=0, b=0)
+)
+
+st.plotly_chart(fig_map, width="stretch")
+
+# optional: Klick → Filter
+try:
+    clicked = st.session_state.get("map_click")
+except:
+    clicked = None
+
+# -----------------------------
+# ✅ EXPORT (JETZT FIX)
 # -----------------------------
 st.subheader("⬇️ Datenexport")
 
@@ -194,26 +224,27 @@ col1, col2, col3 = st.columns(3)
 with col1:
     export_station = st.selectbox("Station wählen", stations)
 
-df_filtered = df[df["station"] == export_station]
-time_valid = df_filtered["time"].dropna()
+# ✅ WICHTIG: UNGEFILTERTE DATEN verwenden
+df_export = df_all[df_all["station"] == export_station]
+
+time_valid = df_export["time"].dropna()
 
 if time_valid.empty:
     st.warning("Keine Zeitdaten verfügbar")
-    st.stop()
-
-with col2:
-    start_date = st.datetime_input("Startzeit", time_valid.min())
-
-with col3:
-    end_date = st.datetime_input("Endzeit", time_valid.max())
-
-export_df = df_filtered[
-    (df_filtered["time"] >= pd.to_datetime(start_date)) &
-    (df_filtered["time"] <= pd.to_datetime(end_date))
-]
-
-if not export_df.empty:
-    csv = export_df.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 CSV herunterladen", csv, f"{export_station}.csv")
 else:
-    st.warning("Keine Daten im Zeitraum")
+    with col2:
+        start_date = st.datetime_input("Startzeit", time_valid.min())
+
+    with col3:
+        end_date = st.datetime_input("Endzeit", time_valid.max())
+
+    export_df = df_export[
+        (df_export["time"] >= pd.to_datetime(start_date)) &
+        (df_export["time"] <= pd.to_datetime(end_date))
+    ]
+
+    if not export_df.empty:
+        csv = export_df.to_csv(index=False).encode("utf-8")
+        st.download_button("📥 CSV herunterladen", csv, f"{export_station}.csv")
+    else:
+        st.warning("Keine Daten im Zeitraum")
