@@ -181,9 +181,9 @@ if show_hnd:
 fig.update_layout(
     height=600,
     xaxis_title="Zeit",
-    yaxis=dict(title="Druck", side="left", type=scale_pressure),
-    yaxis2=dict(title="Trübung", overlaying="y", side="right", type=scale_turbidity),
-    yaxis3=dict(title="Abfluss", overlaying="y", side="right", position=0.92)
+    yaxis=dict(title="Druck (psi)", side="left", type=scale_pressure),
+    yaxis2=dict(title="Trübung (NTU)", overlaying="y", side="right", type=scale_turbidity),
+    yaxis3=dict(title="Abfluss (m³/s)", overlaying="y", side="right", position=0.92)
 )
 
 st.plotly_chart(fig, width="stretch")
