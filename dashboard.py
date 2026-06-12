@@ -107,7 +107,8 @@ def load_behringersmuehle():
 
     # ✅ FIX: Spalten direkt setzen (kein Raten!)
     df = df.iloc[:, :3]
-    df.columns = ["time", "abfluss_bm", "schweb_bm"]
+    df.columns = ["time", "schweb_bm", "abfluss_bm"]
+
 
     # ✅ Datum bereinigen
     df["time"] = (
