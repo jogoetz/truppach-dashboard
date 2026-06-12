@@ -99,28 +99,36 @@ def load_behringersmuehle():
     if not tables:
         return pd.DataFrame()
 
-    # ✅ größte Tabelle = echte Daten
     df = max(tables, key=lambda x: x.shape[0])
 
     if df.shape[1] < 3:
         return pd.DataFrame()
 
-    # ✅ FIX: Spalten direkt setzen (kein Raten!)
- 
-    .astype(float)
+    # ✅ WICHTIG: korrekte Reihenfolge!
+    # 0 = Zeit, 1 = Schwebstoff, 2 = Abfluss
+    df = df.iloc[:, :3]
+    df.columns = ["time", "schweb_bm", "abfluss_bm"]
 
-df["schweb_bm"] = (
-    df["schweb_bm"]
-    .astype(str)
-    .str.replace(",", ".", regex=False)
-    .astype(float)
-)
+    # ✅ Zeit
+    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
+    df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
 
-df = df[
-    df["time"].notna() &
-    df["abfluss_bm"].notna() &
-    df["schweb_bm"].notna()
-]
+    # ✅ Schwebstoff (Komma → Punkt)
+    df["schweb_bm"] = df["schweb_bm"].astype(str)
+    df["schweb_bm"] = df["schweb_bm"].str.replace(",", ".", regex=False)
+    df["schweb_bm"] = pd.to_numeric(df["schweb_bm"], errors="coerce")
+
+    # ✅ Abfluss (Komma → Punkt)
+    df["abfluss_bm"] = df["abfluss_bm"].astype(str)
+    df["abfluss_bm"] = df["abfluss_bm"].str.replace(",", ".", regex=False)
+    df["abfluss_bm"] = pd.to_numeric(df["abfluss_bm"], errors="coerce")
+
+    # ✅ filtern
+    df = df[
+        df["time"].notna() &
+        df["abfluss_bm"].notna() &
+        df["schweb_bm"].notna()
+    ]
 
     return df
 
