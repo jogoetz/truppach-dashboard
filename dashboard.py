@@ -253,12 +253,13 @@ fig.update_layout(
     height=650,
     xaxis=dict(title="Zeit"),
 
-    # ✅ Druck (Basis-Achse)
+    # ✅ Druck (innen links)
     yaxis=dict(
         title="Druck (psi)",
         side="left",
         type=scale_pressure,
-        anchor="x"
+        anchor="x",
+        title_standoff=10   # minimal Abstand
     ),
 
     # ✅ Trübung
@@ -270,28 +271,31 @@ fig.update_layout(
         anchor="x"
     ),
 
-    # ✅ Abfluss (WICHTIG FIX)
+    # ✅ Abfluss
     yaxis3=dict(
         title="Abfluss (m³/s)",
         overlaying="y",
         side="right",
-        position=0.95,
-        anchor="x"   # ✅ DAS FEHLTE
+        position=0.93,
+        anchor="x",
+        title_standoff=10
     ),
 
-    # ✅ Schwebstoff (WICHTIG FIX)
+    # ✅ Schwebstoff (außen links)
     yaxis4=dict(
         title="Schwebstoff (g/m³)",
         overlaying="y",
         side="left",
-        position=0.02,
-        anchor="x"   # ✅ DAS FEHLTE
+        position=0.0,            # GANZ nach außen
+        anchor="x",
+        title_standoff=40        # ✅ DAS IST DER WICHTIGE FIX
     ),
 
     hovermode="x unified",
-    margin=dict(l=120, r=100)
-)
 
+    # ✅ mehr Platz für 2 linke Achsen
+    margin=dict(l=140, r=100)
+)
 st.plotly_chart(fig, use_container_width=True)
 
 # -----------------------------
