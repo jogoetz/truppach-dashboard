@@ -38,48 +38,39 @@ def load_data():
     return df.dropna(subset=["time"])
 
 # -----------------------------
-# ✅ GKD ABFLUSS (ROBUST FINAL)
+# ✅ HND ABFLUSS (STABIL)
 # -----------------------------
 @st.cache_data(ttl=600)
-def load_gkd_abfluss():
-    url = "https://www.gkd.bayern.de/de/fluesse/abfluss/bayern/plankenfels-24244504/messwerte?zr=alle&beginn=01.01.2025&ende=12.06.2026"
+def load_hnd_abfluss():
+    url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&begin=01.01.2025&end=12.06.2026&setdiskr=15"
 
-    try:
-        tables = pd.read_html(url, flavor="bs4")
-    except Exception:
-        return pd.DataFrame()
+    tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
 
     if not tables:
         return pd.DataFrame()
 
-    # ✅ größte Tabelle nehmen → echte Messwerte
+    # größte Tabelle wählen
     df = max(tables, key=lambda x: x.shape[0])
 
     # Sicherheitscheck
     if df.shape[1] < 2:
         return pd.DataFrame()
 
-    # nur relevante Spalten
+    # erste 2 Spalten = Zeit + Abfluss
     df = df.iloc[:, :2]
     df.columns = ["time", "abfluss"]
 
-    # ✅ Datum robust interpretieren
+    # Datum bereinigen
     df["time"] = df["time"].astype(str)
     df["time"] = df["time"].str.replace(r"\(.*\)", "", regex=True).str.strip()
 
-    df["time"] = pd.to_datetime(
-        df["time"],
-        dayfirst=True,
-        errors="coerce"
-    )
+    # Datum parsen
+    df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
 
-    # ✅ Abfluss konvertieren
-    df["abfluss"] = pd.to_numeric(
-        df["abfluss"].astype(str).str.replace(",", ".", regex=False),
-        errors="coerce"
-    )
+    # Abfluss parsen
+    df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
-    # ✅ nur gültige Daten behalten
+    # gültige Werte behalten
     df = df[df["time"].notna() & df["abfluss"].notna()]
 
     return df
@@ -115,7 +106,7 @@ smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
 
 show_raw = st.sidebar.checkbox("Rohdaten anzeigen", True)
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", True)
-show_hnd = st.sidebar.checkbox("🌊 Abfluss Pegel Plankenfels", False)
+show_hnd = st.sidebar.checkbox("🌊 Abfluss Pegel Plankenfels", True)
 
 scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
 scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
@@ -137,7 +128,6 @@ def smooth(series, window):
 st.subheader("📈 Daten")
 fig = go.Figure()
 
-# Wartung anzeigen
 if show_maintenance:
     for d in maintenance_dates:
         fig.add_shape(
@@ -152,11 +142,8 @@ if show_maintenance:
             line_width=0
         )
 
-# Farben
 base_colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
-color_map = {s: base_colors[i % 4] for i, s in enumerate(stations)}
 
-# Sensor-Daten
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
 
@@ -166,24 +153,13 @@ for (station, param), d in df.groupby(["station", "parameter"]):
     axis = "y1" if "Druck" in param else "y2"
 
     if show_raw:
-        fig.add_trace(go.Scatter(
-            x=d["time"], y=d["value"],
-            mode="lines",
-            opacity=0.25,
-            showlegend=False,
-            yaxis=axis
-        ))
+        fig.add_trace(go.Scatter(x=d["time"], y=d["value"], mode="lines", opacity=0.25, showlegend=False, yaxis=axis))
 
-    fig.add_trace(go.Scatter(
-        x=d["time"], y=y_smooth,
-        mode="lines",
-        name=f"{station} - {param}",
-        yaxis=axis
-    ))
+    fig.add_trace(go.Scatter(x=d["time"], y=y_smooth, mode="lines", name=f"{station} - {param}", yaxis=axis))
 
-# ✅ Abfluss hinzufügen
+# ✅ HND Abfluss
 if show_hnd:
-    df_hnd = load_gkd_abfluss()
+    df_hnd = load_hnd_abfluss()
 
     if not df_hnd.empty:
         fig.add_trace(go.Scatter(
@@ -195,7 +171,7 @@ if show_hnd:
             yaxis="y3"
         ))
     else:
-        st.warning("Keine Abflussdaten verfügbar (GKD liefert aktuell keine verwertbaren Werte)")
+        st.warning("Keine Abflussdaten verfügbar")
 
 # Layout
 fig.update_layout(
@@ -203,23 +179,27 @@ fig.update_layout(
     xaxis_title="Zeit",
     yaxis=dict(title="Druck", side="left", type=scale_pressure),
     yaxis2=dict(title="Trübung", overlaying="y", side="right", type=scale_turbidity),
-    yaxis3=dict(title="Abfluss", overlaying="y", side="right", position=0.92),
-    margin=dict(l=60, r=300, t=20, b=40)
+    yaxis3=dict(title="Abfluss", overlaying="y", side="right", position=0.92)
 )
 
 st.plotly_chart(fig, width="stretch")
 
 # -----------------------------
-# EXPORT
+# ✅ EXPORT (FINAL FIX)
 # -----------------------------
 st.subheader("⬇️ Datenexport")
-
-time_valid = df["time"].dropna()
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
     export_station = st.selectbox("Station wählen", stations)
+
+df_filtered = df[df["station"] == export_station]
+time_valid = df_filtered["time"].dropna()
+
+if time_valid.empty:
+    st.warning("Keine Zeitdaten verfügbar")
+    st.stop()
 
 with col2:
     start_date = st.datetime_input("Startzeit", time_valid.min())
@@ -227,10 +207,9 @@ with col2:
 with col3:
     end_date = st.datetime_input("Endzeit", time_valid.max())
 
-export_df = df[
-    (df["station"] == export_station) &
-    (df["time"] >= pd.to_datetime(start_date)) &
-    (df["time"] <= pd.to_datetime(end_date))
+export_df = df_filtered[
+    (df_filtered["time"] >= pd.to_datetime(start_date)) &
+    (df_filtered["time"] <= pd.to_datetime(end_date))
 ]
 
 if not export_df.empty:
