@@ -184,7 +184,13 @@ if show_maintenance:
             opacity=0.25,
             line_width=0
         )
-
+        
+color_map = {
+    "Plankenfels": "#1f77b4",
+    "Geislareuth": "#ff7f0e",
+    "Seitenbach": "#2ca02c",
+    "Wehr": "#d62728",
+}
 
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
@@ -243,14 +249,6 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, width="stretch")
-
-
-color_map = {
-    "Plankenfels": "#1f77b4",
-    "Geislareuth": "#ff7f0e",
-    "Seitenbach": "#2ca02c",
-    "Wehr": "#d62728",
-}
 
 # -----------------------------
 # ✅ KARTE
