@@ -221,23 +221,45 @@ if show_bm_schweb and df_bm is not None:
 # ✅ 4 ACHSEN
 fig.update_layout(
     height=650,
-    xaxis_title="Zeit",
-    hovermode="x unified",
+    xaxis=dict(title="Zeit"),
 
-    yaxis=dict(title="Druck (psi)", side="left", type=scale_pressure),
-    yaxis2=dict(title="Trübung (NTU)", overlaying="y", side="right", type=scale_turbidity),
-    yaxis3=dict(title="Abfluss (m³/s)", overlaying="y", side="right", position=0.95),
-    
+    # ✅ Druck (Basis-Achse)
+    yaxis=dict(
+        title="Druck (psi)",
+        side="left",
+        type=scale_pressure,
+        anchor="x"
+    ),
+
+    # ✅ Trübung
+    yaxis2=dict(
+        title="Trübung (NTU)",
+        overlaying="y",
+        side="right",
+        type=scale_turbidity,
+        anchor="x"
+    ),
+
+    # ✅ Abfluss (WICHTIG FIX)
+    yaxis3=dict(
+        title="Abfluss (m³/s)",
+        overlaying="y",
+        side="right",
+        position=0.95,
+        anchor="x"   # ✅ DAS FEHLTE
+    ),
+
+    # ✅ Schwebstoff (WICHTIG FIX)
     yaxis4=dict(
         title="Schwebstoff (g/m³)",
         overlaying="y",
         side="left",
-        position=0.02,   # weiter nach außen
-        anchor="x"       # wichtig!
+        position=0.02,
+        anchor="x"   # ✅ DAS FEHLTE
     ),
 
-    margin=dict(l=120, r=80)   # mehr Platz links
-
+    hovermode="x unified",
+    margin=dict(l=120, r=100)
 )
 
 st.plotly_chart(fig, use_container_width=True)
