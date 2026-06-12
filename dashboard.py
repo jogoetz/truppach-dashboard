@@ -221,6 +221,14 @@ fig.update_layout(
 
 st.plotly_chart(fig, width="stretch")
 
+
+color_map = {
+    "Plankenfels": "#1f77b4",
+    "Geislareuth": "#ff7f0e",
+    "Seitenbach": "#2ca02c",
+    "Wehr": "#d62728",
+}
+
 # -----------------------------
 # ✅ KARTE
 # -----------------------------
