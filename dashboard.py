@@ -150,9 +150,9 @@ if df_bm is None or df_bm.empty:
     st.error("❌ BM Daten leer oder konnten nicht geladen werden!")
 
 
-if df_bm is not None:
-    st.write("DEBUG BM Daten:")
-    st.write(df_bm.head(20))
+#if df_bm is not None:
+#    st.write("DEBUG BM Daten:")
+#    st.write(df_bm.head(20))
 
 # -----------------------------
 # HELPER
