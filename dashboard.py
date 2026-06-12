@@ -84,7 +84,13 @@ def load_behringersmuehle():
     url = "https://www.gkd.bayern.de/de/fluesse/schwebstoff/regnitz/behringersmuehle-24241710/gesamtzeitraum/tabelle?zr=gesamt&parameter=konzentration&parameterNr=14&beginn=01.01.2025&ende=11.06.2026"
 
     try:
-        tables = pd.read_html(url, flavor="bs4")
+tables = pd.read_html(
+    url,
+    flavor="bs4",
+    decimal=",",
+    thousands=None   # ✅ ganz wichtig!
+)
+
     except Exception:
         return pd.DataFrame()
 
