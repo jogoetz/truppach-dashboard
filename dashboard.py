@@ -23,6 +23,7 @@ maintenance_dates = pd.to_datetime([
     "11.02.2026","09.02.2026","27.01.2026",
     "18.12.2025","08.12.2025","02.12.2025",
     "06.11.2025","30.10.2025","20.10.2025",
+    "15.10.2025","02.10.2025","01.09.2025"
 ], dayfirst=True)
 
 # -----------------------------
@@ -37,201 +38,182 @@ def load_data():
     return df.dropna(subset=["time"])
 
 # -----------------------------
-# HND ABFLUSS
+# ✅ HND ABFLUSS (STABIL)
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_hnd_abfluss():
     url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&begin=01.01.2025&end=12.06.2026&setdiskr=15"
-    tables = pd.read_html(url, flavor="bs4")
+
+    tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
+
+    if not tables:
+        return pd.DataFrame()
+
+    # größte Tabelle wählen
     df = max(tables, key=lambda x: x.shape[0])
 
+    # Sicherheitscheck
+    if df.shape[1] < 2:
+        return pd.DataFrame()
+
+    # erste 2 Spalten = Zeit + Abfluss
     df = df.iloc[:, :2]
     df.columns = ["time", "abfluss"]
 
+    # Datum bereinigen
+    df["time"] = df["time"].astype(str)
+    df["time"] = df["time"].str.replace(r"\(.*\)", "", regex=True).str.strip()
+
+    # Datum parsen
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
+
+    # Abfluss parsen
     df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
-    return df.dropna()
+    # gültige Werte behalten
+    df = df[df["time"].notna() & df["abfluss"].notna()]
+
+    return df
 
 # -----------------------------
-# HND NIEDERSCHLAG
+# RESET
 # -----------------------------
-@st.cache_data(ttl=600)
-def load_rain():
-    url = "https://www.hnd.bayern.de/niederschlag/regnitz/mistelbach-200113/tabelle?beginn=13.06.2025&ende=12.06.2026"
-    tables = pd.read_html(url, flavor="bs4")
-    df = max(tables, key=lambda x: x.shape[0])
+if st.sidebar.button("🔄 Daten neu laden"):
+    st.cache_data.clear()
+    st.rerun()
 
-    df = df.iloc[:, :2]
-    df.columns = ["time", "rain"]
-
-    df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
-    df["rain"] = pd.to_numeric(df["rain"], errors="coerce")
-
-    return df.dropna()
-
-# -----------------------------
-# GKD SCHWEBSTOFF
-# -----------------------------
-@st.cache_data(ttl=600)
-def load_schweb():
-    url = "https://www.gkd.bayern.de/de/fluesse/schwebstoff/regnitz/behringersmuehle-24241710/gesamtzeitraum/tabelle?zr=gesamt&parameterNr=15&parameter=konzentration"
-
-    tables = pd.read_html(url, flavor="bs4")
-    df = max(tables, key=lambda x: x.shape[0])
-
-    df = df.iloc[:, :2]
-    df.columns = ["time", "schweb"]
-
-    df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
-
-    df["schweb"] = (
-        df["schweb"]
-        .astype(str)
-        .str.replace(",", ".", regex=False)
-        .str.extract(r"([-+]?\d*\.?\d+)")[0]
-        .astype(float)
-    )
-
-    return df.dropna()
-
-# -----------------------------
-# LOAD
-# -----------------------------
 df = load_data()
 
 if df.empty:
-    st.error("Keine Daten")
+    st.error("❌ Keine Daten gefunden")
     st.stop()
-
-# -----------------------------
-# SIDEBAR
-# -----------------------------
-stations = sorted(df["station"].unique())
-params = sorted(df["parameter"].unique())
-
-default_sel = stations
-if st.session_state.selected_station_map:
-    default_sel = [st.session_state.selected_station_map]
-
-sel_stations = st.sidebar.multiselect("Stationen", stations, default_sel)
-sel_params = st.sidebar.multiselect("Parameter", params, params)
-
-show_raw = st.sidebar.checkbox("Rohdaten", True)
-show_maintenance = st.sidebar.checkbox("Wartung", True)
-
-show_pf = st.sidebar.checkbox("Abfluss Plankenfels", True)
-show_rain = st.sidebar.checkbox("Niederschlag", True)
-show_schweb = st.sidebar.checkbox("Schwebstoff", True)
 
 # -----------------------------
 # FILTER
 # -----------------------------
+stations = sorted(df["station"].unique())
+params = sorted(df["parameter"].unique())
+
+default_selection = stations
+if st.session_state.selected_station_map:
+    default_selection = [st.session_state.selected_station_map]
+
+sel_stations = st.sidebar.multiselect("Stationen", stations, default_selection)
+sel_params = st.sidebar.multiselect("Parameter", params, params)
+
+smooth_pressure = st.sidebar.slider("Glättung Druck", 1, 200, 10)
+smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
+
+show_raw = st.sidebar.checkbox("Rohdaten anzeigen", True)
+show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", True)
+show_hnd = st.sidebar.checkbox("🌊 Abfluss Pegel Plankenfels", True)
+
+scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
+scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
+
 df = df[
-    df["station"].isin(sel_stations) &
-    df["parameter"].isin(sel_params)
+    (df["station"].isin(sel_stations)) &
+    (df["parameter"].isin(sel_params))
 ]
+
+# -----------------------------
+# HELPERS
+# -----------------------------
+def smooth(series, window):
+    return series.rolling(window, min_periods=1).mean()
 
 # -----------------------------
 # PLOT
 # -----------------------------
+st.subheader("📈 Daten")
 fig = go.Figure()
 
 if show_maintenance:
     for d in maintenance_dates:
-        fig.add_vrect(x0=d, x1=d+pd.Timedelta(days=1), fillcolor="gray", opacity=0.2)
+        fig.add_shape(
+            type="rect",
+            x0=d,
+            x1=d + pd.Timedelta(days=1),
+            y0=0,
+            y1=1,
+            yref="paper",
+            fillcolor="gray",
+            opacity=0.25,
+            line_width=0
+        )
 
-for (s,p), d in df.groupby(["station","parameter"]):
+base_colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+
+for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
 
+    window = smooth_pressure if "Druck" in param else smooth_turbidity
+    y_smooth = smooth(d["value"], window)
+
+    axis = "y1" if "Druck" in param else "y2"
+
     if show_raw:
-        fig.add_trace(go.Scatter(x=d["time"], y=d["value"], opacity=0.2, showlegend=False))
+        fig.add_trace(go.Scatter(x=d["time"], y=d["value"], mode="lines", opacity=0.25, showlegend=False, yaxis=axis))
 
-    fig.add_trace(go.Scatter(x=d["time"], y=d["value"], name=f"{s}-{p}"))
+    fig.add_trace(go.Scatter(x=d["time"], y=y_smooth, mode="lines", name=f"{station} - {param}", yaxis=axis))
 
-# externe Daten
-if show_pf:
-    d = load_hnd_abfluss()
-    fig.add_trace(go.Scatter(x=d["time"], y=d["abfluss"], name="PF Abfluss", yaxis="y3"))
+# ✅ HND Abfluss
+if show_hnd:
+    df_hnd = load_hnd_abfluss()
 
-if show_rain:
-    d = load_rain()
-    fig.add_trace(go.Bar(x=d["time"], y=d["rain"], name="Regen", yaxis="y4"))
+    if not df_hnd.empty:
+        fig.add_trace(go.Scatter(
+            x=df_hnd["time"],
+            y=df_hnd["abfluss"],
+            mode="lines",
+            name="Abfluss (m³/s)",
+            line=dict(color="black", width=2, dash="dot"),
+            yaxis="y3"
+        ))
+    else:
+        st.warning("Keine Abflussdaten verfügbar")
 
-if show_schweb:
-    d = load_schweb()
-    fig.add_trace(go.Scatter(x=d["time"], y=d["schweb"], name="Schwebstoff", yaxis="y2"))
-
+# Layout
 fig.update_layout(
     height=600,
-    yaxis=dict(title="Druck"),
-    yaxis2=dict(title="Trübung/Schwebstoff", overlaying="y", side="right"),
-    yaxis3=dict(title="Abfluss", overlaying="y", side="right", position=0.9),
-    yaxis4=dict(title="Regen", overlaying="y", side="right", position=1.0)
+    xaxis_title="Zeit",
+    yaxis=dict(title="Druck", side="left", type=scale_pressure),
+    yaxis2=dict(title="Trübung", overlaying="y", side="right", type=scale_turbidity),
+    yaxis3=dict(title="Abfluss", overlaying="y", side="right", position=0.92)
 )
 
 st.plotly_chart(fig, width="stretch")
 
 # -----------------------------
-# ✅ KARTE (INTERAKTIV)
+# ✅ EXPORT (FINAL FIX)
 # -----------------------------
-st.subheader("🗺️ Messstationen")
+st.subheader("⬇️ Datenexport")
 
-station_coords = {
-    "Plankenfels": [49.8791, 11.3350],
-    "Geislareuth": [49.9222, 11.4217],
-    "Seitenbach": [49.9151, 11.3986],
-    "Wehr": [49.9156, 11.3969]
-}
+col1, col2, col3 = st.columns(3)
 
-map_df = pd.DataFrame([
-    {"station": s, "lat": c[0], "lon": c[1]}
-    for s,c in station_coords.items()
-])
+with col1:
+    export_station = st.selectbox("Station wählen", stations)
 
-fig_map = go.Figure()
+df_filtered = df[df["station"] == export_station]
+time_valid = df_filtered["time"].dropna()
 
-fig_map.add_trace(go.Scattermapbox(
-    lat=map_df["lat"],
-    lon=map_df["lon"],
-    mode="markers+text",
-    text=map_df["station"],
-    marker=dict(size=14, color="blue")
-))
+if time_valid.empty:
+    st.warning("Keine Zeitdaten verfügbar")
+    st.stop()
 
-fig_map.update_layout(
-    mapbox_style="open-street-map",
-    mapbox_zoom=11,
-    mapbox_center=dict(
-        lat=map_df["lat"].mean(),
-        lon=map_df["lon"].mean()
-    ),
-    height=400,
-    margin=dict(l=0,r=0,t=0,b=0)
-)
+with col2:
+    start_date = st.datetime_input("Startzeit", time_valid.min())
 
-# ✅ Klick-Auswahl
-clicked = st.plotly_chart(fig_map, use_container_width=True)
+with col3:
+    end_date = st.datetime_input("Endzeit", time_valid.max())
 
-if clicked and "points" in clicked:
-    point = clicked["points"][0]
-    selected = map_df.iloc[point["pointIndex"]]["station"]
-    st.session_state.selected_station_map = selected
-    st.rerun()
+export_df = df_filtered[
+    (df_filtered["time"] >= pd.to_datetime(start_date)) &
+    (df_filtered["time"] <= pd.to_datetime(end_date))
+]
 
-# -----------------------------
-# EXPORT
-# -----------------------------
-st.subheader("Export")
-
-station = st.selectbox("Station", stations)
-
-df_e = df[df["station"]==station]
-tv = df_e["time"].dropna()
-
-start = st.datetime_input("Start", tv.min())
-end   = st.datetime_input("Ende", tv.max())
-
-out = df_e[(df_e["time"]>=start)&(df_e["time"]<=end)]
-
-st.download_button("CSV", out.to_csv(index=False), f"{station}.csv")
+if not export_df.empty:
+    csv = export_df.to_csv(index=False).encode("utf-8")
+    st.download_button("📥 CSV herunterladen", csv, f"{export_station}.csv")
+else:
+    st.warning("Keine Daten im Zeitraum")
