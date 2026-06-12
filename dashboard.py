@@ -68,10 +68,16 @@ def load_hnd_abfluss():
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_behringersmuehle():
+
     url = "https://www.gkd.bayern.de/de/fluesse/schwebstoff/regnitz/behringersmuehle-24241710/gesamtzeitraum/tabelle?zr=gesamt&parameter=konzentration&parameterNr=14&beginn=01.01.2025&ende=11.06.2026"
 
     try:
-        tables = pd.read_html(url, flavor="bs4", decimal=",")
+        tables = pd.read_html(
+            url,
+            flavor="bs4",
+            decimal=",",
+            thousands=None
+        )
     except Exception:
         return pd.DataFrame()
 
@@ -79,14 +85,21 @@ def load_behringersmuehle():
         return pd.DataFrame()
 
     df = max(tables, key=lambda x: x.shape[0])
+
+    # ✅ nur relevante Spalten
     df = df.iloc[:, :3]
     df.columns = ["time", "schweb_bm", "abfluss_bm"]
 
+    # ✅ Datum
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
+
+    # ✅ Zahlen korrekt
     df["schweb_bm"] = pd.to_numeric(df["schweb_bm"], errors="coerce")
     df["abfluss_bm"] = pd.to_numeric(df["abfluss_bm"], errors="coerce")
 
-    return df.dropna()
+    df = df.dropna(subset=["time", "schweb_bm", "abfluss_bm"])
+
+    return df
 
 # -----------------------------
 # RESET
