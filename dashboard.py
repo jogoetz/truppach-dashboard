@@ -203,7 +203,7 @@ fig.update_layout(
     yaxis=dict(title="Druck", side="left", type=scale_pressure),
     yaxis2=dict(title="Trübung", overlaying="y", side="right", type=scale_turbidity),
     yaxis3=dict(title="Abfluss", overlaying="y", side="right", position=0.9),
-    yaxis4=dict(title="Niederschlag", overlaying="y", side="right", position=2.0),
+    yaxis4=dict(title="Niederschlag", overlaying="y", side="right", position=1.0),
     margin=dict(l=60, r=350, t=20, b=40)
 )
 
