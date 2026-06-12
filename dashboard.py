@@ -45,14 +45,22 @@ def load_data():
 def load_hnd_abfluss():
     url = "https://www.gkd.bayern.de/de/fluesse/abfluss/bayern/plankenfels-24244504/messwerte?zr=alle&addhr=hr_hw&beginn=01.01.2025&ende=12.06.2026"
 # url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&von=01.01.2025&bis=31.12.2026"
-    tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
+    
+tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
     df_hnd = tables[0]
 
+    # ✅ nimmt automatisch nur die ersten 2 sinnvollen Spalten
+    df_hnd = df_hnd.iloc[:, :2]
+
+    # ✅ sichere Benennung
     df_hnd.columns = ["time", "abfluss"]
-    df_hnd["time"] = pd.to_datetime(df_hnd["time"], dayfirst=True)
+
+    # ✅ Typkonvertierung robust
+    df_hnd["time"] = pd.to_datetime(df_hnd["time"], dayfirst=True, errors="coerce")
     df_hnd["abfluss"] = pd.to_numeric(df_hnd["abfluss"], errors="coerce")
 
     return df_hnd.dropna()
+
 
 # -----------------------------
 # RESET
