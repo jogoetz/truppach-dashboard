@@ -31,7 +31,7 @@ maintenance_dates = pd.to_datetime([
 # -----------------------------
 @st.cache_data
 def load_data():
-    r = requests.get(PARQUET_URL)
+    r = requests.get(PARQUET_URL, timeout=10)
     r.raise_for_status()
     df = pd.read_parquet(io.BytesIO(r.content))
     df["time"] = pd.to_datetime(df["time"], errors="coerce")
@@ -45,49 +45,33 @@ def load_hnd_abfluss():
     url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&begin=01.01.2025&end=12.06.2026&setdiskr=15"
 
     tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
-
     if not tables:
         return pd.DataFrame()
 
     df = max(tables, key=lambda x: x.shape[0])
-
     cols = list(df.columns)
+
     time_col = cols[0]
-
-    value_col = None
-    for c in cols:
-        if "abfluss" in str(c).lower():
-            value_col = c
-            break
-
-    if value_col is None and len(cols) >= 2:
-        value_col = cols[1]
+    value_col = next((c for c in cols if "abfluss" in str(c).lower()), cols[1])
 
     df = df[[time_col, value_col]]
     df.columns = ["time", "abfluss"]
 
     df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
-
     df["abfluss"] = pd.to_numeric(df["abfluss"], errors="coerce")
 
     return df.dropna()
 
 # -----------------------------
-# ✅ BEHRINGERSMÜHLE
+# BEHRINGERSMÜHLE
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_behringersmuehle():
-
     url = "https://www.gkd.bayern.de/de/fluesse/schwebstoff/regnitz/behringersmuehle-24241710/gesamtzeitraum/tabelle?zr=gesamt&parameter=konzentration&parameterNr=14&beginn=01.01.2025&ende=11.06.2026"
 
     try:
-        tables = pd.read_html(
-            url,
-            flavor="bs4",
-            decimal=",",
-            thousands=None
-        )
+        tables = pd.read_html(url, flavor="bs4", decimal=",")
     except Exception:
         return pd.DataFrame()
 
@@ -95,21 +79,14 @@ def load_behringersmuehle():
         return pd.DataFrame()
 
     df = max(tables, key=lambda x: x.shape[0])
-
-    # ✅ nur relevante Spalten
     df = df.iloc[:, :3]
     df.columns = ["time", "schweb_bm", "abfluss_bm"]
 
-    # ✅ Datum
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
-
-    # ✅ Zahlen korrekt
     df["schweb_bm"] = pd.to_numeric(df["schweb_bm"], errors="coerce")
     df["abfluss_bm"] = pd.to_numeric(df["abfluss_bm"], errors="coerce")
 
-    df = df.dropna(subset=["time", "schweb_bm", "abfluss_bm"])
-
-    return df
+    return df.dropna()
 
 # -----------------------------
 # RESET
@@ -154,10 +131,7 @@ df = df_all[
     (df_all["parameter"].isin(sel_params))
 ]
 
-if show_bm_abfluss or show_bm_schweb:
-    df_bm = load_behringersmuehle()
-else:
-    df_bm = None
+df_bm = load_behringersmuehle() if (show_bm_abfluss or show_bm_schweb) else None
 
 # -----------------------------
 # HELPER
@@ -177,14 +151,14 @@ if show_maintenance:
             type="rect",
             x0=d,
             x1=d + pd.Timedelta(days=1),
+            yref="paper",
             y0=0,
             y1=1,
-            yref="paper",
-            fillcolor="gray",
             opacity=0.25,
+            fillcolor="gray",
             line_width=0
         )
-        
+
 color_map = {
     "Plankenfels": "#1f77b4",
     "Geislareuth": "#ff7f0e",
@@ -194,64 +168,61 @@ color_map = {
 
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
-
     is_pressure = "Druck" in param
 
     window = smooth_pressure if is_pressure else smooth_turbidity
     y_smooth = smooth(d["value"], window)
 
-    axis = "y1" if is_pressure else "y2"
-
+    axis = "y" if is_pressure else "y2"
     color = color_map.get(station, "#888888")
 
-    # Rohdaten
     if show_raw:
         fig.add_trace(go.Scatter(
-            x=d["time"],
-            y=d["value"],
+            x=d["time"], y=d["value"],
             opacity=0.25,
             showlegend=False,
             line=dict(color=color, dash="dot"),
             yaxis=axis
         ))
 
-    # Hauptlinie
     fig.add_trace(go.Scatter(
         x=d["time"],
         y=y_smooth,
         name=f"{station} - {param}",
-        line=dict(
-            color=color,
-            dash="dot" if is_pressure else "solid"   # ✅ HIER IST DER KEY
-        ),
+        line=dict(color=color, dash="dot" if is_pressure else "solid"),
         yaxis=axis
     ))
 
-# Abfluss PF
+# Abfluss
 if show_hnd:
     d = load_hnd_abfluss()
     fig.add_trace(go.Scatter(x=d["time"], y=d["abfluss"], name="Abfluss PF", yaxis="y3"))
 
-# Abfluss BM
 if show_bm_abfluss and df_bm is not None:
     fig.add_trace(go.Scatter(x=df_bm["time"], y=df_bm["abfluss_bm"], name="Abfluss BM", yaxis="y3"))
 
-# Schwebstoff BM
+# Schwebstoff
 if show_bm_schweb and df_bm is not None:
-    fig.add_trace(go.Scatter(x=df_bm["time"], y=df_bm["schweb_bm"], name="Schwebstoff BM", yaxis="y2"))
+    fig.add_trace(go.Scatter(x=df_bm["time"], y=df_bm["schweb_bm"], name="Schwebstoff BM", yaxis="y4"))
 
+# ✅ 4 ACHSEN
 fig.update_layout(
-    height=600,
+    height=650,
     xaxis_title="Zeit",
-    yaxis=dict(title="Druck (psi)", side="left"),
-    yaxis2=dict(title="Trübung / Schwebstoff", overlaying="y", side="right"),
-    yaxis3=dict(title="Abfluss (m³/s)", overlaying="y", side="right", position=0.9),
+    hovermode="x unified",
+
+    yaxis=dict(title="Druck (psi)", side="left", type=scale_pressure),
+    yaxis2=dict(title="Trübung (NTU)", overlaying="y", side="right", type=scale_turbidity),
+    yaxis3=dict(title="Abfluss (m³/s)", overlaying="y", side="right", position=0.95),
+    yaxis4=dict(title="Schwebstoff (g/m³)", overlaying="y", side="left", position=0.05),
+
+    margin=dict(l=80, r=80)
 )
 
-st.plotly_chart(fig, width="stretch")
+st.plotly_chart(fig, use_container_width=True)
 
 # -----------------------------
-# ✅ KARTE
+# KARTE
 # -----------------------------
 st.subheader("🗺️ Messstationen")
 
@@ -267,35 +238,25 @@ map_df = pd.DataFrame([
     for s, coords in station_coords.items()
 ])
 
-fig_map = go.Figure()
-
-fig_map.add_trace(go.Scattermapbox(
+fig_map = go.Figure(go.Scattermapbox(
     lat=map_df["lat"],
     lon=map_df["lon"],
     mode="markers",
-    marker=dict(
-        size=14,
-        color=[color_map.get(s, "#888888") for s in map_df["station"]],
-    ),
-    text=map_df["station"],
-    hovertemplate="<b>%{text}</b><extra></extra>"
+    marker=dict(size=14, color=[color_map.get(s, "#888888") for s in map_df["station"]]),
+    text=map_df["station"]
 ))
 
 fig_map.update_layout(
     mapbox_style="open-street-map",
     mapbox_zoom=11,
-    mapbox_center=dict(
-        lat=map_df["lat"].mean(),
-        lon=map_df["lon"].mean()
-    ),
-    height=400,
-    margin=dict(l=0, r=0, t=0, b=0)
+    mapbox_center=dict(lat=map_df["lat"].mean(), lon=map_df["lon"].mean()),
+    height=400
 )
 
 st.plotly_chart(fig_map, use_container_width=True)
 
 # -----------------------------
-# ✅ EXPORT
+# EXPORT
 # -----------------------------
 st.subheader("⬇️ Datenexport (Rohdaten)")
 
@@ -305,24 +266,19 @@ with col1:
     export_station = st.selectbox("Station wählen", stations)
 
 with col2:
-    start_date = st.datetime_input("Startzeit", df["time"].min())
+    start_date = st.datetime_input("Startzeit", df_all["time"].min())
 
 with col3:
-    end_date = st.datetime_input("Endzeit", df["time"].max())
+    end_date = st.datetime_input("Endzeit", df_all["time"].max())
 
-export_df = df[
-    (df["station"] == export_station) &
-    (df["time"] >= pd.to_datetime(start_date)) &
-    (df["time"] <= pd.to_datetime(end_date))
+export_df = df_all[
+    (df_all["station"] == export_station) &
+    (df_all["time"] >= pd.to_datetime(start_date)) &
+    (df_all["time"] <= pd.to_datetime(end_date))
 ].sort_values("time")
 
 if not export_df.empty:
     csv = export_df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        "📥 CSV herunterladen",
-        csv,
-        f"{export_station}_export.csv",
-        "text/csv"
-    )
+    st.download_button("📥 CSV herunterladen", csv, f"{export_station}_export.csv")
 else:
     st.warning("Keine Daten im gewählten Zeitraum")
