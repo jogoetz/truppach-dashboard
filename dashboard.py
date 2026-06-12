@@ -119,7 +119,7 @@ smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
 show_raw = st.sidebar.checkbox("Rohdaten anzeigen", True)
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", True)
 show_hnd = st.sidebar.checkbox("🌊 Abfluss Plankenfels (HND, m³/s)", True)
-show_rain = st.sidebar.checkbox("🌧️ Niederschlag Mistelga (verg. 7 Tage", True)
+show_rain = st.sidebar.checkbox("🌧️ Niederschlag Mistelgau (7 Tage", True)
 
 scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
 scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
@@ -203,7 +203,7 @@ fig.update_layout(
     yaxis=dict(title="Druck", side="left", type=scale_pressure),
     yaxis2=dict(title="Trübung", overlaying="y", side="right", type=scale_turbidity),
     yaxis3=dict(title="Abfluss", overlaying="y", side="right", position=0.9),
-    yaxis4=dict(title="Niederschlag", overlaying="y", side="right", position=1.0),
+    yaxis4=dict(title="Niederschlag", overlaying="y", side="right", position=2.0),
     margin=dict(l=60, r=350, t=20, b=40)
 )
 
