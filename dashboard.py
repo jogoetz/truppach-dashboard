@@ -99,53 +99,45 @@ def load_behringersmuehle():
     if not tables:
         return pd.DataFrame()
 
+    # ✅ größte Tabelle = echte Daten
     df = max(tables, key=lambda x: x.shape[0])
 
     if df.shape[1] < 3:
         return pd.DataFrame()
 
-    cols = list(df.columns)
-
-    time_col = cols[0]
-
-    # ✅ Spalten automatisch erkennen
-    abfluss_col = None
-    schweb_col = None
-
-    for c in cols:
-        c_str = str(c).lower()
-        if "abfluss" in c_str:
-            abfluss_col = c
-        if "konzentration" in c_str or "schweb" in c_str:
-            schweb_col = c
-
-    # Fallback (falls HND Struktur abweicht)
-    if abfluss_col is None and len(cols) > 1:
-        abfluss_col = cols[1]
-    if schweb_col is None and len(cols) > 2:
-        schweb_col = cols[2]
-
-    df = df[[time_col, abfluss_col, schweb_col]]
+    # ✅ FIX: Spalten direkt setzen (kein Raten!)
+    df = df.iloc[:, :3]
     df.columns = ["time", "abfluss_bm", "schweb_bm"]
 
-    # Datum
-    df["time"] = df["time"].astype(str).str.replace(r"\(.*\)", "", regex=True).str.strip()
+    # ✅ Datum bereinigen
+    df["time"] = (
+        df["time"]
+        .astype(str)
+        .str.replace(r"\(.*\)", "", regex=True)
+        .str.strip()
+    )
+
     df["time"] = pd.to_datetime(df["time"], dayfirst=True, errors="coerce")
 
-    # Werte
-    for col in ["abfluss_bm", "schweb_bm"]:
-        df[col] = (
-            df[col]
-            .astype(str)
-            .str.replace(",", ".", regex=False)
-            .str.extract(r"([-+]?\d*\.?\d+)")[0]
-            .astype(float)
-        )
+    # ✅ Werte sauber parsen
+    df["abfluss_bm"] = pd.to_numeric(
+        df["abfluss_bm"].astype(str).str.replace(",", ".", regex=False),
+        errors="coerce"
+    )
 
-    df = df[df["time"].notna()]
+    df["schweb_bm"] = pd.to_numeric(
+        df["schweb_bm"].astype(str).str.replace(",", ".", regex=False),
+        errors="coerce"
+    )
+
+    # ✅ nur gültige Werte behalten
+    df = df[
+        df["time"].notna() &
+        df["abfluss_bm"].notna() &
+        df["schweb_bm"].notna()
+    ]
 
     return df
-
 
 # -----------------------------
 # RESET
