@@ -118,8 +118,8 @@ smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
 
 show_raw = st.sidebar.checkbox("Rohdaten anzeigen", True)
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", True)
-show_hnd = st.sidebar.checkbox("🌊 Abfluss", True)
-show_rain = st.sidebar.checkbox("🌧️ Niederschlag", True)
+show_hnd = st.sidebar.checkbox("🌊 Abfluss Plankenfels (HND, m³/s)", True)
+show_rain = st.sidebar.checkbox("🌧️ Niederschlag Mistelga (verg. 7 Tage", True)
 
 scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
 scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
