@@ -220,3 +220,80 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, width="stretch")
+
+# -----------------------------
+# ✅ KARTE
+# -----------------------------
+st.subheader("🗺️ Messstationen")
+
+station_coords = {
+    "Plankenfels": [49.8791219270009, 11.3350454717875],
+    "Geislareuth": [49.92225187, 11.42177715],
+    "Seitenbach": [49.9151933518834, 11.3986191898584],
+    "Wehr": [49.91562086, 11.39690505]
+}
+
+map_df = pd.DataFrame([
+    {"station": s, "lat": coords[0], "lon": coords[1]}
+    for s, coords in station_coords.items()
+])
+
+fig_map = go.Figure()
+
+fig_map.add_trace(go.Scattermapbox(
+    lat=map_df["lat"],
+    lon=map_df["lon"],
+    mode="markers",
+    marker=dict(
+        size=14,
+        color=[color_map.get(s, "#888888") for s in map_df["station"]],
+    ),
+    text=map_df["station"],
+    hovertemplate="<b>%{text}</b><extra></extra>"
+))
+
+fig_map.update_layout(
+    mapbox_style="open-street-map",
+    mapbox_zoom=11,
+    mapbox_center=dict(
+        lat=map_df["lat"].mean(),
+        lon=map_df["lon"].mean()
+    ),
+    height=400,
+    margin=dict(l=0, r=0, t=0, b=0)
+)
+
+st.plotly_chart(fig_map, use_container_width=True)
+
+# -----------------------------
+# ✅ EXPORT
+# -----------------------------
+st.subheader("⬇️ Datenexport (Rohdaten)")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    export_station = st.selectbox("Station wählen", stations)
+
+with col2:
+    start_date = st.datetime_input("Startzeit", df["time"].min())
+
+with col3:
+    end_date = st.datetime_input("Endzeit", df["time"].max())
+
+export_df = df[
+    (df["station"] == export_station) &
+    (df["time"] >= pd.to_datetime(start_date)) &
+    (df["time"] <= pd.to_datetime(end_date))
+].sort_values("time")
+
+if not export_df.empty:
+    csv = export_df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        "📥 CSV herunterladen",
+        csv,
+        f"{export_station}_export.csv",
+        "text/csv"
+    )
+else:
+    st.warning("Keine Daten im gewählten Zeitraum")
