@@ -359,3 +359,39 @@ if not export_df.empty:
     st.download_button("📥 CSV herunterladen", csv, f"{export_station}_export.csv")
 else:
     st.warning("Keine Daten im gewählten Zeitraum")
+
+# -----------------------------
+# ✅ ZEITBLÖCKE
+# -----------------------------
+st.subheader("📅 Verfügbare Daten (Teilzeiträume)")
+
+def get_time_blocks(data, gap_minutes=10):
+    results = []
+
+    for (station, param), d in data.groupby(["station", "parameter"]):
+        d = d.sort_values("time")
+        dt = d["time"].diff().dt.total_seconds().div(60)
+        blocks = (dt > gap_minutes).cumsum()
+
+        d = d.copy()
+        d["block"] = blocks
+
+        grouped = d.groupby("block").agg(
+            Start=("time", "min"),
+            Ende=("time", "max"),
+            Punkte=("time", "count")
+        ).reset_index(drop=True)
+
+        grouped["station"] = station
+        grouped["parameter"] = param
+
+        results.append(grouped)
+
+    return pd.concat(results, ignore_index=True)
+
+summary = get_time_blocks(df)
+
+summary["Start"] = summary["Start"].dt.strftime("%Y-%m-%d %H:%M")
+summary["Ende"] = summary["Ende"].dt.strftime("%Y-%m-%d %H:%M")
+
+st.dataframe(summary, width="stretch")
