@@ -331,10 +331,27 @@ fig.update_layout(
 )
 st.plotly_chart(fig, use_container_width=True)
 
+
+# ✅ Stationen definieren
+station_coords = {
+    "Plankenfels": [49.8791219270009, 11.3350454717875],
+    "Geislareuth": [49.92225187, 11.42177715],
+    "Seitenbach": [49.9151933518834, 11.3986191898584],
+    "Wehr": [49.91562086, 11.39690505],
+    "Behringersmühle": [49.695227, 11.328322]
+}
+
+# ✅ DataFrame bauen
+map_df = pd.DataFrame([
+    {"station": s, "lat": coords[0], "lon": coords[1]}
+    for s, coords in station_coords.items()
+])
+
+
 # -----------------------------
 # ✅ FOLIUM KARTE
 # -----------------------------
-st.subheader("🗺️ Messstationen + Flächen")
+st.subheader("🗺️ Messstationen und Einzugsgebiete")
 
 # Mittelpunkt
 center_lat = map_df["lat"].mean()
