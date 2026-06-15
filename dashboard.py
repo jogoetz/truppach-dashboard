@@ -342,12 +342,20 @@ fig_map = go.Figure(go.Scattermapbox(
     text=map_df["station"]
 ))
 
+
 fig_map.update_layout(
-    mapbox_style="open-street-map",
-    mapbox_zoom=11,
-    mapbox_center=dict(lat=map_df["lat"].mean(), lon=map_df["lon"].mean()),
+    mapbox=dict(
+        style="open-street-map",
+        bounds=dict(
+            west=map_df["lon"].min(),
+            east=map_df["lon"].max(),
+            south=map_df["lat"].min(),
+            north=map_df["lat"].max()
+        )
+    ),
     height=700
 )
+
 
 st.plotly_chart(fig_map, use_container_width=True)
 # -----------------------------
