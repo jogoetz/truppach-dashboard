@@ -160,6 +160,24 @@ df_bm = load_behringersmuehle() if (show_bm_abfluss or show_bm_schweb) else None
 def smooth(series, window):
     return series.rolling(window, min_periods=1).mean()
 
+def format_duration(start, end):
+    delta = end - start
+    total_minutes = int(delta.total_seconds() // 60)
+
+    days = total_minutes // (60 * 24)
+    hours = (total_minutes % (60 * 24)) // 60
+    minutes = total_minutes % 60
+
+    parts = []
+    if days > 0:
+        parts.append(f"{days}d")
+    if hours > 0:
+        parts.append(f"{hours}h")
+    if minutes > 0:
+        parts.append(f"{minutes}m")
+
+    return " ".join(parts) if parts else "0m"
+
 # -----------------------------
 # PLOT
 # -----------------------------
@@ -381,6 +399,8 @@ def get_time_blocks(data, gap_minutes=10):
             Punkte=("time", "count")
         ).reset_index(drop=True)
 
+        grouped["Dauer"] = grouped.apply(lambda r: format_duration(r["Start"], r["Ende"]), axis=1)
+
         grouped["station"] = station
         grouped["parameter"] = param
 
@@ -402,12 +422,12 @@ def get_gaps(blocks, min_gap_minutes=10):
 
             # ✅ HIER ist der Filter
             if gap_minutes > min_gap_minutes:
-                gaps.append({
+                 gaps.append({
                     "station": station,
                     "parameter": param,
                     "Start": gap_start,
                     "Ende": gap_end,
-                    "Dauer_min": gap_minutes
+                    "Dauer": format_duration(gap_start, gap_end)
                 })
 
     return pd.DataFrame(gaps)
@@ -415,23 +435,52 @@ def get_gaps(blocks, min_gap_minutes=10):
 summary = get_time_blocks(df)
 gaps = get_gaps(summary, min_gap)
 
-show_gaps = st.checkbox("❌ Nicht verfügbare Zeiträume anzeigen", True)
+show_gaps = st.checkbox("Nicht verfügbare Zeiträume anzeigen", True)
+
 
 if show_gaps:
     gaps_display = gaps.copy()
 
     if not gaps_display.empty:
+
+        # ✅ Spalten umbenennen
+        gaps_display = gaps_display.rename(columns={
+            "station": "Station",
+            "parameter": "Parameter"
+        })
+
+        # ✅ Datum formatieren
         gaps_display["Start"] = gaps_display["Start"].dt.strftime("%Y-%m-%d %H:%M")
         gaps_display["Ende"] = gaps_display["Ende"].dt.strftime("%Y-%m-%d %H:%M")
 
+        # ✅ Spalten REIHENFOLGE festlegen
+        gaps_display = gaps_display[[
+            "Station", "Parameter", "Start", "Ende", "Dauer"
+        ]]
+
         st.dataframe(gaps_display, width="stretch")
+
     else:
         st.info("✅ Keine Datenlücken gefunden")
 
+
 else:
     summary_display = summary.copy()
+
+    # ✅ Spalten umbenennen
+    summary_display = summary_display.rename(columns={
+        "station": "Station",
+        "parameter": "Parameter"
+    })
+
+    # ✅ Datum formatieren
     summary_display["Start"] = summary_display["Start"].dt.strftime("%Y-%m-%d %H:%M")
     summary_display["Ende"] = summary_display["Ende"].dt.strftime("%Y-%m-%d %H:%M")
+
+    # ✅ gleiche Reihenfolge wie oben!
+    summary_display = summary_display[[
+        "Station", "Parameter", "Start", "Ende", "Dauer"
+    ]]
 
     st.dataframe(summary_display, width="stretch")
 
