@@ -343,17 +343,23 @@ fig_map = go.Figure(go.Scattermapbox(
     text=map_df["station"]
 ))
 
+# ✅ Zoom automatisch berechnen
+lat_range = map_df["lat"].max() - map_df["lat"].min()
 
+zoom = 10
+if lat_range > 0.2:
+    zoom = 9
+if lat_range > 0.5:
+    zoom = 8
+
+# ✅ Layout setzen
 fig_map.update_layout(
-    mapbox=dict(
-        style="open-street-map",
-        bounds=dict(
-            west=map_df["lon"].min(),
-            east=map_df["lon"].max(),
-            south=map_df["lat"].min(),
-            north=map_df["lat"].max()
-        )
+    mapbox_style="open-street-map",
+    mapbox_center=dict(
+        lat=map_df["lat"].mean(),
+        lon=map_df["lon"].mean()
     ),
+    mapbox_zoom=zoom,
     height=700
 )
 
