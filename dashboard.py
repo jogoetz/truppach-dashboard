@@ -415,7 +415,23 @@ def get_gaps(blocks, min_gap_minutes=10):
 summary = get_time_blocks(df)
 gaps = get_gaps(summary, min_gap)
 
-summary["Start"] = summary["Start"].dt.strftime("%Y-%m-%d %H:%M")
-summary["Ende"] = summary["Ende"].dt.strftime("%Y-%m-%d %H:%M")
+show_gaps = st.checkbox("❌ Nicht verfügbare Zeiträume anzeigen", True)
 
-st.dataframe(summary, width="stretch")
+if show_gaps:
+    gaps_display = gaps.copy()
+
+    if not gaps_display.empty:
+        gaps_display["Start"] = gaps_display["Start"].dt.strftime("%Y-%m-%d %H:%M")
+        gaps_display["Ende"] = gaps_display["Ende"].dt.strftime("%Y-%m-%d %H:%M")
+
+        st.dataframe(gaps_display, width="stretch")
+    else:
+        st.info("✅ Keine Datenlücken gefunden")
+
+else:
+    summary_display = summary.copy()
+    summary_display["Start"] = summary_display["Start"].dt.strftime("%Y-%m-%d %H:%M")
+    summary_display["Ende"] = summary_display["Ende"].dt.strftime("%Y-%m-%d %H:%M")
+
+    st.dataframe(summary_display, width="stretch")
+
