@@ -3,11 +3,25 @@ import streamlit as st
 import plotly.graph_objects as go
 import requests
 import io
+import folium
+from streamlit_folium import st_folium
+import json
 
 # -----------------------------
 # CONFIG
 # -----------------------------
 PARQUET_URL = "https://github.com/jogoetz/truppach-dashboard/raw/refs/heads/main/data.parquet"
+
+# ✅ GEOJSON (für Karte)
+GEOJSON_URL = "https://raw.githubusercontent.com/jogoetz/truppach-dashboard/main/catchments.geojson"
+
+@st.cache_data
+def load_geojson():
+    r = requests.get(GEOJSON_URL)
+    r.raise_for_status()
+    return r.json()
+
+geojson_data = load_geojson()
 
 st.set_page_config(layout="wide")
 st.title("🌊 Monitoring Truppach - Druck & Trübung")
@@ -318,53 +332,46 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 # -----------------------------
-# KARTE
+# ✅ FOLIUM KARTE
 # -----------------------------
-st.subheader("🗺️ Messstationen")
+st.subheader("🗺️ Messstationen + Flächen")
 
-station_coords = {
-    "Plankenfels": [49.8791219270009, 11.3350454717875],
-    "Geislareuth": [49.92225187, 11.42177715],
-    "Seitenbach": [49.9151933518834, 11.3986191898584],
-    "Wehr": [49.91562086, 11.39690505],
-    "Behringersmühle": [49.695227, 11.328322]
-}
+# Mittelpunkt
+center_lat = map_df["lat"].mean()
+center_lon = map_df["lon"].mean()
 
-map_df = pd.DataFrame([
-    {"station": s, "lat": coords[0], "lon": coords[1]}
-    for s, coords in station_coords.items()
-])
-
-fig_map = go.Figure(go.Scattermapbox(
-    lat=map_df["lat"],
-    lon=map_df["lon"],
-    mode="markers",
-    marker=dict(size=14, color=[color_map.get(s, "#888888") for s in map_df["station"]]),
-    text=map_df["station"]
-))
-
-# ✅ Zoom automatisch berechnen
-lat_range = map_df["lat"].max() - map_df["lat"].min()
-
-zoom = 10
-if lat_range > 0.2:
-    zoom = 9
-if lat_range > 0.5:
-    zoom = 8
-
-# ✅ Layout setzen
-fig_map.update_layout(
-    mapbox_style="open-street-map",
-    mapbox_center=dict(
-        lat=map_df["lat"].mean(),
-        lon=map_df["lon"].mean()
-    ),
-    mapbox_zoom=zoom,
-    height=700
+# Karte
+m = folium.Map(
+    location=[center_lat, center_lon],
+    zoom_start=9
 )
 
+# ✅ Marker
+for _, row in map_df.iterrows():
+    folium.Marker(
+        location=[row["lat"], row["lon"]],
+        tooltip=row["station"],
+        popup=row["station"]
+    ).add_to(m)
 
-st.plotly_chart(fig_map, use_container_width=True)
+# ✅ Polygone (GeoJSON)
+folium.GeoJson(
+    geojson_data,
+    name="Gebiete",
+    style_function=lambda x: {
+        "fillColor": "blue",
+        "color": "blue",
+        "weight": 2,
+        "fillOpacity": 0.3,
+    }
+).add_to(m)
+
+# ✅ Layer-Control (WICHTIG!)
+folium.LayerControl().add_to(m)
+
+# ✅ Anzeige
+st_folium(m, width=None, height=700)
+
 # -----------------------------
 # EXPORT
 # -----------------------------
