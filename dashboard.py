@@ -129,7 +129,7 @@ sel_params = st.sidebar.multiselect("Parameter", params, params)
 
 smooth_pressure = st.sidebar.slider("Glättung Druck", 1, 200, 10)
 smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
-min_gap = st.sidebar.slider("Min. Lücke (Minuten)", 1, 120, 10)
+min_gap = st.sidebar.slider("Min. Lücke (Minuten)", 1, 1000, 10)
 show_raw = st.sidebar.checkbox("Rohdaten anzeigen", False)
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", False)
 show_hnd = st.sidebar.checkbox("🌊 Abfluss Plankenfels", False)
