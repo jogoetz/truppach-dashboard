@@ -325,7 +325,8 @@ station_coords = {
     "Plankenfels": [49.8791219270009, 11.3350454717875],
     "Geislareuth": [49.92225187, 11.42177715],
     "Seitenbach": [49.9151933518834, 11.3986191898584],
-    "Wehr": [49.91562086, 11.39690505]
+    "Wehr": [49.91562086, 11.39690505],
+    "Behringersmühle": [49.695227, 11.328322]
 }
 
 map_df = pd.DataFrame([
@@ -345,7 +346,7 @@ fig_map.update_layout(
     mapbox_style="open-street-map",
     mapbox_zoom=11,
     mapbox_center=dict(lat=map_df["lat"].mean(), lon=map_df["lon"].mean()),
-    height=400
+    height=700
 )
 
 st.plotly_chart(fig_map, use_container_width=True)
