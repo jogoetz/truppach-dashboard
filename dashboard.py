@@ -372,22 +372,52 @@ for _, row in map_df.iterrows():
     ).add_to(m)
 
 # ✅ Polygone (GeoJSON)
+def style_function(feature):
+    name = feature["properties"]["GEBBEZ"]
+
+    color_map_poly = {
+        "EZG Geislareuth": "blue",
+        "EZG Seitenbach": "green",
+        "EZG Plankenfels": "red",
+        "EZG Wehr": "orange",
+    }
+
+    return {
+        "fillColor": color_map_poly.get(name, "gray"),
+        "color": "black",
+        "weight": 2,
+        "fillOpacity": 0.4,
+    }
+
 folium.GeoJson(
     geojson_data,
-    name="Gebiete",
-    style_function=lambda x: {
-        "fillColor": "blue",
-        "color": "blue",
-        "weight": 2,
-        "fillOpacity": 0.3,
-    }
+    name="Einzugsgebiete",
+    style_function=style_function,
+    tooltip=folium.GeoJsonTooltip(fields=["GEBBEZ"])
 ).add_to(m)
 
 # ✅ Layer-Control (WICHTIG!)
 folium.LayerControl().add_to(m)
 
 # ✅ Anzeige
-st_folium(m, width=None, height=700)
+map_data = st_folium(m, width=None, height=700)
+
+if map_data and map_data.get("last_active_drawing"):
+    props = map_data["last_active_drawing"]["properties"]
+
+    if "GEBBEZ" in props:
+        selected_area = props["GEBBEZ"]
+
+        area_to_station = {
+            "EZG Geislareuth": "Geislareuth",
+            "EZG Seitenbach": "Seitenbach",
+            "EZG Plankenfels": "Plankenfels",
+            "EZG Wehr": "Wehr",
+        }
+
+        if selected_area in area_to_station:
+            st.session_state.selected_station_map = area_to_station[selected_area]
+            st.rerun()
 
 # -----------------------------
 # EXPORT
