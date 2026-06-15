@@ -388,7 +388,32 @@ def get_time_blocks(data, gap_minutes=10):
 
     return pd.concat(results, ignore_index=True)
 
+def get_gaps(blocks, min_gap_minutes=10):
+    gaps = []
+
+    for (station, param), d in blocks.groupby(["station", "parameter"]):
+        d = d.sort_values("Start").reset_index(drop=True)
+
+        for i in range(len(d) - 1):
+            gap_start = d.loc[i, "Ende"]
+            gap_end = d.loc[i+1, "Start"]
+
+            gap_minutes = (gap_end - gap_start).total_seconds() / 60
+
+            # ✅ HIER ist der Filter
+            if gap_minutes > min_gap_minutes:
+                gaps.append({
+                    "station": station,
+                    "parameter": param,
+                    "Start": gap_start,
+                    "Ende": gap_end,
+                    "Dauer_min": gap_minutes
+                })
+
+    return pd.DataFrame(gaps)
+
 summary = get_time_blocks(df)
+gaps = get_gaps(summary, min_gap)
 
 summary["Start"] = summary["Start"].dt.strftime("%Y-%m-%d %H:%M")
 summary["Ende"] = summary["Ende"].dt.strftime("%Y-%m-%d %H:%M")
