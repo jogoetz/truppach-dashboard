@@ -203,6 +203,7 @@ color_map = {
     "Geislareuth": "#ff7f0e",
     "Seitenbach": "#2ca02c",
     "Wehr": "#d62728",
+    "Behringersmühle": "#9467bd",
 }
 
 for (station, param), d in df.groupby(["station", "parameter"]):
