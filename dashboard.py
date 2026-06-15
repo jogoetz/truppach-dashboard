@@ -13,7 +13,7 @@ import json
 PARQUET_URL = "https://github.com/jogoetz/truppach-dashboard/raw/refs/heads/main/data.parquet"
 
 # ✅ GEOJSON (für Karte)
-GEOJSON_URL = "https://raw.githubusercontent.com/jogoetz/truppach-dashboard/main/catchm.geojson"
+GEOJSON_URL = "https://raw.githubusercontent.com/jogoetz/truppach-dashboard/main/catchments_simpl.geojson"
 
 @st.cache_data
 def load_geojson():
