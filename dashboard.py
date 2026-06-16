@@ -357,7 +357,6 @@ st.subheader("🗺️ Messstationen und Einzugsgebiete")
 center_lat = map_df["lat"].mean()
 center_lon = map_df["lon"].mean()
 
-# ✅ Basiskarte
 m = folium.Map(
     location=[center_lat, center_lon],
     zoom_start=10,
@@ -378,7 +377,7 @@ folium.TileLayer(
     attr="Tiles © Esri"
 ).add_to(m)
 
-# ✅ Stationen als Layer
+# ✅ Stationen
 fg_stations = folium.FeatureGroup(name="📍 Stationen", show=True)
 
 for _, row in map_df.iterrows():
@@ -398,42 +397,48 @@ for _, row in map_df.iterrows():
 
 fg_stations.add_to(m)
 
-# ✅ Einzugsgebiete
-fg_catchments = folium.FeatureGroup(
-    name="📐 Einzugsgebiete",
-    show=False
-)
-
-color_map_poly = {
-    "EZG Geislareuth": "#1f77b4",
-    "EZG Seitenbach": "#2ca02c",
-    "EZG Plankenfels": "#d62728",
-    "EZG Wehr": "#ff7f0e",
+# ✅ Mapping EZG → Station (für Farbe!)
+ezg_to_station = {
+    "EZG Geislareuth": "Geislareuth",
+    "EZG Seitenbach": "Seitenbach",
+    "EZG Plankenfels": "Plankenfels",
+    "EZG Wehr": "Wehr",
 }
 
-def style_function(feature):
-    name = feature["properties"]["GEBBEZ"]
+# ✅ EINZELNE FeatureGroups pro EZG
+for ezg_name, station in ezg_to_station.items():
 
-    return {
-        "fillColor": color_map_poly.get(name, "gray"),
-        "color": "black",
-        "weight": 2,
-        "fillOpacity": 0.4,
-    }
+    color = color_map.get(station, "gray")
 
-folium.GeoJson(
-    geojson_data,
-    style_function=style_function,
-    tooltip=folium.GeoJsonTooltip(fields=["GEBBEZ"])
-).add_to(fg_catchments)
+    fg = folium.FeatureGroup(
+        name=f"📐 {ezg_name}",
+        show=False
+    )
 
-fg_catchments.add_to(m)
+    def style_function(feature, ezg_name=ezg_name, color=color):
+        if feature["properties"]["GEBBEZ"] != ezg_name:
+            return {"fillOpacity": 0, "opacity": 0}
+
+        return {
+            "fillColor": color,
+            "color": color,
+            "weight": 2,
+            "fillOpacity": 0.4,
+        }
+
+    folium.GeoJson(
+        geojson_data,
+        style_function=style_function,
+        tooltip=folium.GeoJsonTooltip(fields=["GEBBEZ"])
+    ).add_to(fg)
+
+    fg.add_to(m)
 
 # ✅ LayerControl
 folium.LayerControl(collapsed=False).add_to(m)
 
 # -----------------------------
-# ✅ KOMBINIERTE LEGENDE
+# ✅ LEGENDE
 # -----------------------------
 legend_items_stations = ""
 for station, color in color_map.items():
@@ -446,12 +451,13 @@ for station, color in color_map.items():
     """
 
 legend_items_polys = ""
-for name, color in color_map_poly.items():
+for ezg, station in ezg_to_station.items():
+    color = color_map.get(station, "gray")
     legend_items_polys += f"""
     <div>
         <span style="display:inline-block;width:12px;height:12px;
         background:{color};margin-right:6px;opacity:0.6;"></span>
-        {name}
+        {ezg}
     </div>
     """
 
@@ -485,22 +491,15 @@ m.get_root().html.add_child(folium.Element(legend_html))
 # ✅ Anzeige
 map_data = st_folium(m, height=700, use_container_width=True)
 
-# ✅ Klick auf Polygon → Station auswählen
+# ✅ Klick → Station filtern
 if map_data and map_data.get("last_active_drawing"):
     props = map_data["last_active_drawing"]["properties"]
 
     if "GEBBEZ" in props:
         selected_area = props["GEBBEZ"]
 
-        area_to_station = {
-            "EZG Geislareuth": "Geislareuth",
-            "EZG Seitenbach": "Seitenbach",
-            "EZG Plankenfels": "Plankenfels",
-            "EZG Wehr": "Wehr",
-        }
-
-        if selected_area in area_to_station:
-            st.session_state.selected_station_map = area_to_station[selected_area]
+        if selected_area in ezg_to_station:
+            st.session_state.selected_station_map = ezg_to_station[selected_area]
             st.rerun()
 
 # -----------------------------
