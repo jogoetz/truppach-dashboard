@@ -357,7 +357,7 @@ st.subheader("🗺️ Messstationen und Einzugsgebiete")
 center_lat = map_df["lat"].mean()
 center_lon = map_df["lon"].mean()
 
-# ✅ Basiskarte OHNE Default-Tiles
+# ✅ Basiskarte
 m = folium.Map(
     location=[center_lat, center_lon],
     zoom_start=10,
@@ -365,22 +365,20 @@ m = folium.Map(
     control_scale=True
 )
 
-# ✅ Hintergrundlayer (klar benannt + stabil)
+# ✅ Hintergrundlayer
 folium.TileLayer(
     tiles="OpenStreetMap",
     name="🗺️ Karte",
-    attr="© OpenStreetMap",
-    control=True
+    attr="© OpenStreetMap"
 ).add_to(m)
 
 folium.TileLayer(
     tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     name="🛰️ Orthophoto",
-    attr="Tiles © Esri",
-    control=True
+    attr="Tiles © Esri"
 ).add_to(m)
 
-# ✅ Marker in FeatureGroup (wichtig für Kontrolle + Styling)
+# ✅ Stationen als Layer
 fg_stations = folium.FeatureGroup(name="📍 Stationen", show=True)
 
 for _, row in map_df.iterrows():
@@ -388,8 +386,8 @@ for _, row in map_df.iterrows():
 
     folium.CircleMarker(
         location=[row["lat"], row["lon"]],
-        radius=8,                     # etwas größer → sichtbar!
-        color="black",                # Rand für besseren Kontrast
+        radius=8,
+        color="black",
         weight=1,
         fill=True,
         fill_color=color,
@@ -400,21 +398,21 @@ for _, row in map_df.iterrows():
 
 fg_stations.add_to(m)
 
-# ✅ Einzugsgebiete separat (AUS)
+# ✅ Einzugsgebiete
 fg_catchments = folium.FeatureGroup(
     name="📐 Einzugsgebiete",
     show=False
 )
 
+color_map_poly = {
+    "EZG Geislareuth": "#1f77b4",
+    "EZG Seitenbach": "#2ca02c",
+    "EZG Plankenfels": "#d62728",
+    "EZG Wehr": "#ff7f0e",
+}
+
 def style_function(feature):
     name = feature["properties"]["GEBBEZ"]
-
-    color_map_poly = {
-        "EZG Geislareuth": "#1f77b4",
-        "EZG Seitenbach": "#2ca02c",
-        "EZG Plankenfels": "#d62728",
-        "EZG Wehr": "#ff7f0e",
-    }
 
     return {
         "fillColor": color_map_poly.get(name, "gray"),
@@ -431,11 +429,79 @@ folium.GeoJson(
 
 fg_catchments.add_to(m)
 
-# ✅ LayerControl → jetzt klar getrennt
+# ✅ LayerControl
 folium.LayerControl(collapsed=False).add_to(m)
+
+# -----------------------------
+# ✅ KOMBINIERTE LEGENDE
+# -----------------------------
+legend_items_stations = ""
+for station, color in color_map.items():
+    legend_items_stations += f"""
+    <div>
+        <span style="display:inline-block;width:12px;height:12px;
+        background:{color};border-radius:50%;margin-right:6px;"></span>
+        {station}
+    </div>
+    """
+
+legend_items_polys = ""
+for name, color in color_map_poly.items():
+    legend_items_polys += f"""
+    <div>
+        <span style="display:inline-block;width:12px;height:12px;
+        background:{color};margin-right:6px;opacity:0.6;"></span>
+        {name}
+    </div>
+    """
+
+legend_html = f"""
+<div style="
+position: fixed;
+bottom: 30px;
+right: 30px;
+z-index: 9999;
+background-color: white;
+padding: 12px 14px;
+border-radius: 10px;
+box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+font-size: 14px;
+line-height: 1.5;
+">
+
+<b>📍 Stationen</b><br>
+{legend_items_stations}
+
+<hr style="margin:6px 0;">
+
+<b>📐 Einzugsgebiete</b><br>
+{legend_items_polys}
+
+</div>
+"""
+
+m.get_root().html.add_child(folium.Element(legend_html))
 
 # ✅ Anzeige
 map_data = st_folium(m, height=700, use_container_width=True)
+
+# ✅ Klick auf Polygon → Station auswählen
+if map_data and map_data.get("last_active_drawing"):
+    props = map_data["last_active_drawing"]["properties"]
+
+    if "GEBBEZ" in props:
+        selected_area = props["GEBBEZ"]
+
+        area_to_station = {
+            "EZG Geislareuth": "Geislareuth",
+            "EZG Seitenbach": "Seitenbach",
+            "EZG Plankenfels": "Plankenfels",
+            "EZG Wehr": "Wehr",
+        }
+
+        if selected_area in area_to_station:
+            st.session_state.selected_station_map = area_to_station[selected_area]
+            st.rerun()
 
 # -----------------------------
 # EXPORT
