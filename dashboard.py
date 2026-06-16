@@ -280,13 +280,12 @@ if show_bm_schweb and df_bm is not None:
     ))
 
 
-
-# ✅ 4 ACHSEN
+# ✅ ACHSEN
 fig.update_layout(
     height=650,
     xaxis=dict(title="Zeit"),
 
-    # ✅ Druck (innen links)
+    # ✅ Druck
     yaxis=dict(
         title="Druck (psi)",
         side="left",
@@ -314,14 +313,14 @@ fig.update_layout(
         title_standoff=10
     ),
 
-    # ✅ Schwebstoff (außen links)
+    # ✅ Schwebstoff
     yaxis4=dict(
         title="Schwebstoff (g/m³)",
         overlaying="y",
         side="left",
-        position=0.0,            # GANZ nach außen
+        position=0.0,
         anchor="x",
-        title_standoff=40        # ✅ DAS IST DER WICHTIGE FIX
+        title_standoff=40
     ),
 
     hovermode="x unified",
