@@ -357,44 +357,52 @@ st.subheader("🗺️ Messstationen und Einzugsgebiete")
 center_lat = map_df["lat"].mean()
 center_lon = map_df["lon"].mean()
 
-# ✅ Basiskarte OHNE Tiles (für Switch)
+# ✅ Basiskarte OHNE Default-Tiles
 m = folium.Map(
     location=[center_lat, center_lon],
-    zoom_start=9,
-    tiles=None
+    zoom_start=10,
+    tiles=None,
+    control_scale=True
 )
 
-# ✅ Hintergrundlayer
+# ✅ Hintergrundlayer (klar benannt + stabil)
 folium.TileLayer(
     tiles="OpenStreetMap",
-    name="Karte",
+    name="🗺️ Karte",
+    attr="© OpenStreetMap",
     control=True
 ).add_to(m)
 
 folium.TileLayer(
-    tiles="Esri.WorldImagery",
-    name="Orthophoto",
+    tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    name="🛰️ Orthophoto",
+    attr="Tiles © Esri",
     control=True
 ).add_to(m)
 
-# ✅ Marker (farblich wie Plot)
+# ✅ Marker in FeatureGroup (wichtig für Kontrolle + Styling)
+fg_stations = folium.FeatureGroup(name="📍 Stationen", show=True)
+
 for _, row in map_df.iterrows():
-    color = color_map.get(row["station"], "gray")
+    color = color_map.get(row["station"], "#666666")
 
     folium.CircleMarker(
         location=[row["lat"], row["lon"]],
-        radius=7,
-        color=color,
+        radius=8,                     # etwas größer → sichtbar!
+        color="black",                # Rand für besseren Kontrast
+        weight=1,
         fill=True,
         fill_color=color,
-        fill_opacity=1,
+        fill_opacity=0.95,
         tooltip=row["station"],
         popup=row["station"]
-    ).add_to(m)
+    ).add_to(fg_stations)
 
-# ✅ Einzugsgebiete als FeatureGroup (standardmäßig AUS)
+fg_stations.add_to(m)
+
+# ✅ Einzugsgebiete separat (AUS)
 fg_catchments = folium.FeatureGroup(
-    name="Einzugsgebiete",
+    name="📐 Einzugsgebiete",
     show=False
 )
 
@@ -423,29 +431,12 @@ folium.GeoJson(
 
 fg_catchments.add_to(m)
 
-# ✅ LayerControl (sichtbar)
+# ✅ LayerControl → jetzt klar getrennt
 folium.LayerControl(collapsed=False).add_to(m)
 
 # ✅ Anzeige
-map_data = st_folium(m, width=None, height=700)
+map_data = st_folium(m, height=700, use_container_width=True)
 
-# ✅ Klick auf Polygon → Station auswählen
-if map_data and map_data.get("last_active_drawing"):
-    props = map_data["last_active_drawing"]["properties"]
-
-    if "GEBBEZ" in props:
-        selected_area = props["GEBBEZ"]
-
-        area_to_station = {
-            "EZG Geislareuth": "Geislareuth",
-            "EZG Seitenbach": "Seitenbach",
-            "EZG Plankenfels": "Plankenfels",
-            "EZG Wehr": "Wehr",
-        }
-
-        if selected_area in area_to_station:
-            st.session_state.selected_station_map = area_to_station[selected_area]
-            st.rerun()
 # -----------------------------
 # EXPORT
 # -----------------------------
