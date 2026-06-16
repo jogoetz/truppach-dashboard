@@ -357,29 +357,55 @@ st.subheader("🗺️ Messstationen und Einzugsgebiete")
 center_lat = map_df["lat"].mean()
 center_lon = map_df["lon"].mean()
 
-# Karte
+# ✅ Basiskarte OHNE Tiles (für Switch)
 m = folium.Map(
     location=[center_lat, center_lon],
-    zoom_start=9
+    zoom_start=9,
+    tiles=None
 )
 
-# ✅ Marker
+# ✅ Hintergrundlayer
+folium.TileLayer(
+    tiles="OpenStreetMap",
+    name="Karte",
+    control=True
+).add_to(m)
+
+folium.TileLayer(
+    tiles="Esri.WorldImagery",
+    name="Orthophoto",
+    control=True
+).add_to(m)
+
+# ✅ Marker (farblich wie Plot)
 for _, row in map_df.iterrows():
-    folium.Marker(
+    color = color_map.get(row["station"], "gray")
+
+    folium.CircleMarker(
         location=[row["lat"], row["lon"]],
+        radius=7,
+        color=color,
+        fill=True,
+        fill_color=color,
+        fill_opacity=1,
         tooltip=row["station"],
         popup=row["station"]
     ).add_to(m)
 
-# ✅ Polygone (GeoJSON)
+# ✅ Einzugsgebiete als FeatureGroup (standardmäßig AUS)
+fg_catchments = folium.FeatureGroup(
+    name="Einzugsgebiete",
+    show=False
+)
+
 def style_function(feature):
     name = feature["properties"]["GEBBEZ"]
 
     color_map_poly = {
-        "EZG Geislareuth": "blue",
-        "EZG Seitenbach": "green",
-        "EZG Plankenfels": "red",
-        "EZG Wehr": "orange",
+        "EZG Geislareuth": "#1f77b4",
+        "EZG Seitenbach": "#2ca02c",
+        "EZG Plankenfels": "#d62728",
+        "EZG Wehr": "#ff7f0e",
     }
 
     return {
@@ -391,17 +417,19 @@ def style_function(feature):
 
 folium.GeoJson(
     geojson_data,
-    name="Einzugsgebiete",
     style_function=style_function,
     tooltip=folium.GeoJsonTooltip(fields=["GEBBEZ"])
-).add_to(m)
+).add_to(fg_catchments)
 
-# ✅ Layer-Control (WICHTIG!)
-folium.LayerControl().add_to(m)
+fg_catchments.add_to(m)
+
+# ✅ LayerControl (sichtbar)
+folium.LayerControl(collapsed=False).add_to(m)
 
 # ✅ Anzeige
 map_data = st_folium(m, width=None, height=700)
 
+# ✅ Klick auf Polygon → Station auswählen
 if map_data and map_data.get("last_active_drawing"):
     props = map_data["last_active_drawing"]["properties"]
 
@@ -418,7 +446,6 @@ if map_data and map_data.get("last_active_drawing"):
         if selected_area in area_to_station:
             st.session_state.selected_station_map = area_to_station[selected_area]
             st.rerun()
-
 # -----------------------------
 # EXPORT
 # -----------------------------
