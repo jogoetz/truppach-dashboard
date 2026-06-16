@@ -11,8 +11,6 @@ import json
 # CONFIG
 # -----------------------------
 PARQUET_URL = "https://github.com/jogoetz/truppach-dashboard/raw/refs/heads/main/data.parquet"
-
-# ✅ GEOJSON (für Karte)
 GEOJSON_URL = "https://raw.githubusercontent.com/jogoetz/truppach-dashboard/main/catchments_simpl.geojson"
 
 @st.cache_data
@@ -400,9 +398,9 @@ fg_stations.add_to(m)
 ezg_to_station = {
     "EZG Geislareuth": "Geislareuth",
     "EZG Seitenbach": "Seitenbach",
-    "EZG Plankenfels": "Plankenfels",
     "EZG Wehr": "Wehr",
-}
+    "EZG Plankenfels": "Plankenfels",
+    }
 
 # ✅ EINZELNE FeatureGroups pro EZG
 for ezg_name, station in ezg_to_station.items():
