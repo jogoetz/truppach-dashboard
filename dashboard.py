@@ -284,6 +284,8 @@ fig.update_layout(
     height=650,
     xaxis=dict(title="Zeit"),
 
+    uirevision="constant", 
+    
     # Druck (links außen)
     yaxis=dict(
         title="Druck (psi)",
