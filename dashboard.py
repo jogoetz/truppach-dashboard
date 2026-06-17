@@ -306,6 +306,12 @@ if show_bm_schweb and df_bm is not None:
 # -----------------------------
 # DUMMY TRACES (nur aktive Achsen!)
 # -----------------------------
+
+
+if not use_y and (use_y2 or use_y3 or use_y4):
+    use_y = True
+    force_base_axis = True
+
 xmin = df_all["time"].min()
 xmax = df_all["time"].max()
 
@@ -330,11 +336,6 @@ if use_y4:
     add_dummy("y4")
 
 force_base_axis = False
-
-if not use_y and (use_y2 or use_y3 or use_y4):
-    use_y = True
-    force_base_axis = True
-
 
 # -----------------------------
 # ACHSEN DYNAMISCH
