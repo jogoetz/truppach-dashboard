@@ -196,15 +196,11 @@ def format_duration(start, end):
 st.subheader("📈 Daten")
 fig = go.Figure()
 
-fig.add_trace(go.Scatter(
-    x=[df["time"].min()],
-    y=[0],
-    mode="lines",
-    line=dict(color="rgba(0,0,0,0)"),
-    showlegend=False,
-    hoverinfo="skip",
-    yaxis="y"
-))
+# ✅ FLAGS
+use_y  = False
+use_y2 = False
+use_y3 = False
+use_y4 = False
 
 if show_maintenance:
     for d in maintenance_dates:
@@ -228,6 +224,9 @@ color_map = {
     "Behringersmühle": "#9467bd",
 }
 
+# -----------------------------
+# EIGENE DATEN
+# -----------------------------
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
     is_pressure = "Druck" in param
@@ -237,6 +236,11 @@ for (station, param), d in df.groupby(["station", "parameter"]):
 
     axis = "y" if is_pressure else "y2"
     color = color_map.get(station, "#888888")
+
+    if is_pressure:
+        use_y = True
+    else:
+        use_y2 = True
 
     if show_raw:
         fig.add_trace(go.Scatter(
@@ -255,91 +259,130 @@ for (station, param), d in df.groupby(["station", "parameter"]):
         yaxis=axis
     ))
 
-# Abfluss
+# -----------------------------
+# EXTERNE DATEN
+# -----------------------------
+
+# Abfluss Plankenfels
 if show_hnd:
     d = load_hnd_abfluss()
-    fig.add_trace(go.Scatter(x=d["time"], y=d["abfluss"], name="Abfluss Plankenfels", yaxis="y3"))
-
+    if not d.empty:
+        use_y3 = True
+        fig.add_trace(go.Scatter(
+            x=d["time"],
+            y=d["abfluss"],
+            name="Abfluss Plankenfels",
+            yaxis="y3"
+        ))
 
 # Abfluss BM
 if show_bm_abfluss and df_bm is not None:
     d_abf = df_bm.dropna(subset=["time", "abfluss_bm"])
-
-    fig.add_trace(go.Scatter(
-        x=d_abf["time"],
-        y=d_abf["abfluss_bm"],
-        name="Abfluss Behringersmühle",
-        yaxis="y3",
-        line=dict(color="black", width=2)
-    ))
-
+    if not d_abf.empty:
+        use_y3 = True
+        fig.add_trace(go.Scatter(
+            x=d_abf["time"],
+            y=d_abf["abfluss_bm"],
+            name="Abfluss Behringersmühle",
+            yaxis="y3",
+            line=dict(color="black", width=2)
+        ))
 
 # Schwebstoff BM
 if show_bm_schweb and df_bm is not None:
     d_sch = df_bm.dropna(subset=["time", "schweb_bm"])
+    if not d_sch.empty:
+        use_y4 = True
+        fig.add_trace(go.Scatter(
+            x=d_sch["time"],
+            y=d_sch["schweb_bm"],
+            name="Schwebstoff Behringersmühle",
+            yaxis="y4",
+            line=dict(color="brown", width=2),
+            opacity=0.8
+        ))
 
+# -----------------------------
+# DUMMY TRACES (nur aktive Achsen!)
+# -----------------------------
+xmin = df_all["time"].min()
+xmax = df_all["time"].max()
+
+def add_dummy(axis):
     fig.add_trace(go.Scatter(
-        x=d_sch["time"],
-        y=d_sch["schweb_bm"],
-        name="Schwebstoff Behringersmühle",
-        yaxis="y4",
-        line=dict(color="brown", width=2),
-        opacity=0.8
+        x=[xmin, xmax],
+        y=[0, 0],
+        line=dict(color="rgba(0,0,0,0)"),
+        showlegend=False,
+        hoverinfo="skip",
+        yaxis=axis
     ))
 
+if use_y:
+    add_dummy("y")
+if use_y2:
+    add_dummy("y2")
+if use_y3:
+    add_dummy("y3")
+if use_y4:
+    add_dummy("y4")
 
-# ✅ ACHSEN
+# ✅ BASE-AXIS FALLBACK (wichtig!)
+if not use_y and (use_y2 or use_y3 or use_y4):
+    use_y = True  # dummy-achse erzwingen (unsichtbar)
 
-fig.update_layout(
-    height=650,
-    xaxis=dict(title="Zeit"),
+# -----------------------------
+# ACHSEN DYNAMISCH
+# -----------------------------
+layout_axes = {}
 
-    uirevision="constant", 
-    
-    # Druck (links außen)
-    yaxis=dict(
+if use_y:
+    layout_axes["yaxis"] = dict(
         title="Druck (psi)",
         side="left",
         type=scale_pressure,
         position=0.00,
-        fixedrange=False
-    ),
+        visible=("Druck" in " ".join(sel_params))  # nur sichtbar wenn wirklich genutzt
+    )
 
-    # Schwebstoff (links innen)
-    yaxis4=dict(
+if use_y4:
+    layout_axes["yaxis4"] = dict(
         title="Schwebstoff (g/m³)",
         overlaying="y",
         side="left",
-        position=0.05,
-        fixedrange=False
-    ),
+        position=0.05
+    )
 
-    # Trübung (rechts innen)
-    yaxis2=dict(
+if use_y2:
+    layout_axes["yaxis2"] = dict(
         title="Trübung (NTU)",
         overlaying="y",
         side="right",
         position=0.95,
-        type=scale_turbidity,
-        fixedrange=False
-    ),
+        type=scale_turbidity
+    )
 
-    # Abfluss (rechts außen)
-    yaxis3=dict(
+if use_y3:
+    layout_axes["yaxis3"] = dict(
         title="Abfluss (m³/s)",
         overlaying="y",
         side="right",
-        position=1.0,
-        fixedrange=False
-    ),
+        position=1.0
+    )
 
+# -----------------------------
+# LAYOUT
+# -----------------------------
+fig.update_layout(
+    height=650,
+    xaxis=dict(title="Zeit"),
+    uirevision="constant",
     hovermode="x unified",
-    margin=dict(l=140, r=120)
+    margin=dict(l=140, r=120),
+    **layout_axes
 )
 
 st.plotly_chart(fig, use_container_width=True)
-
-
 # ✅ Stationen definieren
 station_coords = {
     "Plankenfels": [49.8791219270009, 11.3350454717875],
