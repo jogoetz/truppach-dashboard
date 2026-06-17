@@ -196,6 +196,16 @@ def format_duration(start, end):
 st.subheader("📈 Daten")
 fig = go.Figure()
 
+fig.add_trace(go.Scatter(
+    x=[df["time"].min()],
+    y=[0],
+    mode="lines",
+    line=dict(color="rgba(0,0,0,0)"),
+    showlegend=False,
+    hoverinfo="skip",
+    yaxis="y"
+))
+
 if show_maintenance:
     for d in maintenance_dates:
         fig.add_shape(
@@ -291,7 +301,8 @@ fig.update_layout(
         title="Druck (psi)",
         side="left",
         type=scale_pressure,
-        position=0.00
+        position=0.00,
+        fixedrange=False
     ),
 
     # Schwebstoff (links innen)
@@ -299,7 +310,8 @@ fig.update_layout(
         title="Schwebstoff (g/m³)",
         overlaying="y",
         side="left",
-        position=0.05
+        position=0.05,
+        fixedrange=False
     ),
 
     # Trübung (rechts innen)
@@ -308,7 +320,8 @@ fig.update_layout(
         overlaying="y",
         side="right",
         position=0.95,
-        type=scale_turbidity
+        type=scale_turbidity,
+        fixedrange=False
     ),
 
     # Abfluss (rechts außen)
@@ -316,7 +329,8 @@ fig.update_layout(
         title="Abfluss (m³/s)",
         overlaying="y",
         side="right",
-        position=1.0
+        position=1.0,
+        fixedrange=False
     ),
 
     hovermode="x unified",
