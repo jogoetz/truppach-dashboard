@@ -318,7 +318,8 @@ def add_dummy(axis):
         yaxis=axis
     ))
 
-if use_y:
+
+if use_y or force_base_axis:
     add_dummy("y")
 if use_y2:
     add_dummy("y2")
@@ -327,9 +328,12 @@ if use_y3:
 if use_y4:
     add_dummy("y4")
 
-# ✅ BASE-AXIS FALLBACK (wichtig!)
+force_base_axis = False
+
 if not use_y and (use_y2 or use_y3 or use_y4):
-    use_y = True  # dummy-achse erzwingen (unsichtbar)
+    use_y = True
+    force_base_axis = True
+
 
 # -----------------------------
 # ACHSEN DYNAMISCH
@@ -342,7 +346,7 @@ if use_y:
         side="left",
         type=scale_pressure,
         position=0.00,
-        visible=("Druck" in " ".join(sel_params))  # nur sichtbar wenn wirklich genutzt
+        visible=not force_base_axis
     )
 
 if use_y4:
