@@ -54,7 +54,7 @@ def load_data():
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_hnd_abfluss():
-    url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&begin=01.01.2025&end=12.06.2026&setdiskr=15"
+    url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&begin=01.01.2025&end={today}&setdiskr=15"
 
     tables = pd.read_html(url, flavor="bs4", decimal=",", thousands=".")
     if not tables:
@@ -81,7 +81,7 @@ def load_hnd_abfluss():
 @st.cache_data(ttl=600)
 def load_behringersmuehle():
 
-    url = "https://www.gkd.bayern.de/de/fluesse/schwebstoff/regnitz/behringersmuehle-24241710/gesamtzeitraum/tabelle?zr=gesamt&parameter=konzentration&parameterNr=14&beginn=01.01.2025&ende=11.06.2026"
+    url = "https://www.gkd.bayern.de/de/fluesse/schwebstoff/regnitz/behringersmuehle-24241710/gesamtzeitraum/tabelle?zr=gesamt&parameter=konzentration&parameterNr=14&beginn=01.01.2025&ende={today}"
 
     try:
         tables = pd.read_html(
