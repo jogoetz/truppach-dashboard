@@ -50,7 +50,7 @@ def load_data():
     return df.dropna(subset=["time"])
 
 # -----------------------------
-# HND ABFLUSS
+# Plankenfels
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_hnd_abfluss():
