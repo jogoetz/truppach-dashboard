@@ -278,7 +278,7 @@ if show_raw:
                 else "dash" if is_conductivity
                 else "solid"
             )
-        )
+        ),
         yaxis=axis
     ))
 
