@@ -271,7 +271,7 @@ for (station, param), d in df.groupby(["station", "parameter"]):
         x=d["time"],
         y=y_smooth,
         name=f"{station} - {param}",
-       line=dict(
+        line=dict(
            color=color, 
            dash=(
                "dot" if is_pressure
