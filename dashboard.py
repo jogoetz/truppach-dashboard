@@ -267,20 +267,20 @@ for (station, param), d in df.groupby(["station", "parameter"]):
             yaxis=axis
         ))
 
-         fig.add_trace(go.Scatter(
-            x=d["time"],
-            y=y_smooth,
-            name=f"{station} - {param}",
-           line=dict(
-               color=color, 
-               dash=(
-                   "dot" if is_pressure
-                    else "dash" if is_conductivity
-                    else "solid"
-                )
-            ),
-            yaxis=axis
-        ))
+    fig.add_trace(go.Scatter(
+        x=d["time"],
+        y=y_smooth,
+        name=f"{station} - {param}",
+       line=dict(
+           color=color, 
+           dash=(
+               "dot" if is_pressure
+                else "dash" if is_conductivity
+                else "solid"
+            )
+        ),
+        yaxis=axis
+    ))
 
 # -----------------------------
 # EXTERNE DATEN
