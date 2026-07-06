@@ -233,7 +233,7 @@ color_map = {
 # -----------------------------
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
-  is_pressure = "Druck" in param
+is_pressure = "Druck" in param
 is_turbidity = "Trübung" in param
 is_conductivity = "Leitfähigkeit" in param
 
