@@ -258,14 +258,14 @@ else:
 
 y_smooth = smooth(d["value"], window)
 
-    if show_raw:
-        fig.add_trace(go.Scatter(
-            x=d["time"], y=d["value"],
-            opacity=0.25,
-            showlegend=False,
-            line=dict(color=color, dash="dot"),
-            yaxis=axis
-        ))
+if show_raw:
+    fig.add_trace(go.Scatter(
+        x=d["time"], y=d["value"],
+        opacity=0.25,
+        showlegend=False,
+        line=dict(color=color, dash="dot"),
+        yaxis=axis
+    ))
 
     fig.add_trace(go.Scatter(
         x=d["time"],
