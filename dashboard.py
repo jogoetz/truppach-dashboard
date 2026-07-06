@@ -131,7 +131,7 @@ if df_all.empty:
 # -----------------------------
 stations = sorted(df_all["station"].unique())
 params = sorted(df_all["parameter"].unique())
-
+st.sidebar.write(params) # TEST
 default_selection = stations
 if st.session_state.selected_station_map:
     default_selection = [st.session_state.selected_station_map]
@@ -356,6 +356,8 @@ if use_y3:
     add_dummy("y3")
 if use_y4:
     add_dummy("y4")
+if use_y5:2    
+    add_dummy("y5")    
 
 force_base_axis = False
 
