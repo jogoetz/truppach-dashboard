@@ -356,7 +356,7 @@ if use_y3:
     add_dummy("y3")
 if use_y4:
     add_dummy("y4")
-if use_y5:2    
+if use_y5:
     add_dummy("y5")    
 
 force_base_axis = False
