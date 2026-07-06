@@ -22,7 +22,7 @@ def load_geojson():
 geojson_data = load_geojson()
 
 st.set_page_config(layout="wide")
-st.title("🌊 Monitoring Truppach - Druck & Trübung")
+st.title("🌊 Monitoring Truppach - Druck, Trübung und Leitfähigkeit")
 
 if "selected_station_map" not in st.session_state:
     st.session_state.selected_station_map = None
@@ -141,6 +141,7 @@ sel_params = st.sidebar.multiselect("Parameter", params, params)
 
 smooth_pressure = st.sidebar.slider("Glättung Druck", 1, 200, 10)
 smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
+smooth_conductivity = st.sidebar.slider("Glättung Leitfähigkeit", 1, 200, 10)
 min_gap = st.sidebar.slider("Min. Lücke (Minuten)", 1, 1000, 10)
 show_raw = st.sidebar.checkbox("Rohdaten anzeigen", False)
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", False)
@@ -150,6 +151,7 @@ show_bm_schweb  = st.sidebar.checkbox("🟤 Schwebstoff Behringersmühle", False
 
 scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
 scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
+scale_conductivity = st.sidebar.radio("Skala Leitfähigkeit", ["linear", "log"], horizontal=True)
 
 df = df_all[
     (df_all["station"].isin(sel_stations)) &
@@ -201,6 +203,7 @@ use_y  = False
 use_y2 = False
 use_y3 = False
 use_y4 = False
+use_y5 = False
 force_base_axis = False
 
 if show_maintenance:
@@ -230,18 +233,30 @@ color_map = {
 # -----------------------------
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
-    is_pressure = "Druck" in param
+  is_pressure = "Druck" in param
+is_turbidity = "Trübung" in param
+is_conductivity = "Leitfähigkeit" in param
 
-    window = smooth_pressure if is_pressure else smooth_turbidity
-    y_smooth = smooth(d["value"], window)
+if is_pressure:
+    window = smooth_pressure
+    axis = "y"
+    use_y = True
 
-    axis = "y" if is_pressure else "y2"
-    color = color_map.get(station, "#888888")
+elif is_turbidity:
+    window = smooth_turbidity
+    axis = "y2"
+    use_y2 = True
 
-    if is_pressure:
-        use_y = True
-    else:
-        use_y2 = True
+elif is_conductivity:
+    window = smooth_conductivity
+    axis = "y5"
+    use_y5 = True
+
+else:
+    window = 1
+    axis = "y"
+
+y_smooth = smooth(d["value"], window)
 
     if show_raw:
         fig.add_trace(go.Scatter(
@@ -256,7 +271,14 @@ for (station, param), d in df.groupby(["station", "parameter"]):
         x=d["time"],
         y=y_smooth,
         name=f"{station} - {param}",
-        line=dict(color=color, dash="dot" if is_pressure else "solid"),
+       line=dict(
+           color=color, 
+           dash=(
+               "dot" if is_pressure
+                else "dash" if is_conductivity
+                else "solid"
+            )
+        )
         yaxis=axis
     ))
 
@@ -308,7 +330,7 @@ if show_bm_schweb and df_bm is not None:
 # -----------------------------
 
 
-if not use_y and (use_y2 or use_y3 or use_y4):
+if not use_y and (use_y2 or use_y3 or use_y4 or use_y5):
     use_y = True
     force_base_axis = True
 
@@ -374,6 +396,15 @@ if use_y3:
         overlaying="y",
         side="right",
         position=1.0
+    )
+
+if use_y5:
+    layout_axes["yaxis5"] = dict(
+        title="Leitfähigkeit (µS/cm)",
+        overlaying="y",
+        side="right",
+        position=0.90,
+        type=scale_conductivity
     )
 
 # -----------------------------
