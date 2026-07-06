@@ -263,11 +263,11 @@ for (station, param), d in df.groupby(["station", "parameter"]):
             x=d["time"], y=d["value"],
             opacity=0.25,
             showlegend=False,
-            line=dict(color=color, dash="dot"),
+           line=dict(color=color, dash="dot"),
             yaxis=axis
         ))
 
-        fig.add_trace(go.Scatter(
+     fig.add_trace(go.Scatter(
             x=d["time"],
             y=y_smooth,
             name=f"{station} - {param}",
