@@ -233,54 +233,54 @@ color_map = {
 # -----------------------------
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
-is_pressure = "Druck" in param
-is_turbidity = "Trübung" in param
-is_conductivity = "Leitfähigkeit" in param
+    is_pressure = "Druck" in param
+    is_turbidity = "Trübung" in param
+    is_conductivity = "Leitfähigkeit" in param
 
-if is_pressure:
-    window = smooth_pressure
-    axis = "y"
-    use_y = True
+    if is_pressure:
+        window = smooth_pressure
+        axis = "y"
+        use_y = True
 
-elif is_turbidity:
-    window = smooth_turbidity
-    axis = "y2"
-    use_y2 = True
+    elif is_turbidity:
+        window = smooth_turbidity
+        axis = "y2"
+        use_y2 = True
 
-elif is_conductivity:
-    window = smooth_conductivity
-    axis = "y5"
-    use_y5 = True
+    elif is_conductivity:
+        window = smooth_conductivity
+        axis = "y5"
+        use_y5 = True
 
-else:
-    window = 1
-    axis = "y"
+    else:
+        window = 1
+        axis = "y"
 
-y_smooth = smooth(d["value"], window)
+    y_smooth = smooth(d["value"], window)
 
-if show_raw:
-    fig.add_trace(go.Scatter(
-        x=d["time"], y=d["value"],
-        opacity=0.25,
-        showlegend=False,
-        line=dict(color=color, dash="dot"),
-        yaxis=axis
-    ))
+    if show_raw:
+        fig.add_trace(go.Scatter(
+            x=d["time"], y=d["value"],
+            opacity=0.25,
+            showlegend=False,
+            line=dict(color=color, dash="dot"),
+            yaxis=axis
+        ))
 
-    fig.add_trace(go.Scatter(
-        x=d["time"],
-        y=y_smooth,
-        name=f"{station} - {param}",
-       line=dict(
-           color=color, 
-           dash=(
-               "dot" if is_pressure
-                else "dash" if is_conductivity
-                else "solid"
-            )
-        ),
-        yaxis=axis
-    ))
+        fig.add_trace(go.Scatter(
+            x=d["time"],
+            y=y_smooth,
+            name=f"{station} - {param}",
+           line=dict(
+               color=color, 
+               dash=(
+                   "dot" if is_pressure
+                    else "dash" if is_conductivity
+                    else "solid"
+                )
+            ),
+            yaxis=axis
+        ))
 
 # -----------------------------
 # EXTERNE DATEN
