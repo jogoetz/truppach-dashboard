@@ -406,7 +406,7 @@ if use_y3:
              standoff=0
         ),
         overlaying="y",
-        side="right",
+        side="left",
         position=0.10
     )
 
