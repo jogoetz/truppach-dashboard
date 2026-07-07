@@ -370,8 +370,8 @@ if use_y:
     layout_axes["yaxis"] = dict(
         title="Druck (psi)",
         side="left",
-        position=0.00,
         type=scale_pressure,
+        position=0.00,
         visible=not force_base_axis
     )
 
@@ -380,16 +380,7 @@ if use_y4:
         title="Schwebstoff (g/m³)",
         overlaying="y",
         side="left",
-        position=0.04
-    )
-
-if use_y5:
-    layout_axes["yaxis5"] = dict(
-        title="Spez. Leitfähigkeit (µS/cm)",
-        overlaying="y",
-        side="left",
-        position=0.08,
-        type=scale_conductivity
+        position=0.05
     )
 
 if use_y2:
@@ -397,7 +388,7 @@ if use_y2:
         title="Trübung (NTU)",
         overlaying="y",
         side="right",
-        position=0.92,
+        position=0.95,
         type=scale_turbidity
     )
 
@@ -406,8 +397,18 @@ if use_y3:
         title="Abfluss (m³/s)",
         overlaying="y",
         side="right",
-        position=0.96
+        position=1.00
     )
+
+if use_y5:
+    layout_axes["yaxis5"] = dict(
+        title="Spez. Leitfähigkeit (µS/cm)",
+        overlaying="y",
+        side="right",
+        position=0.90,
+        type=scale_conductivity
+    )
+
 # -----------------------------
 # LAYOUT
 # -----------------------------
