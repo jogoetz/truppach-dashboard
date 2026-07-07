@@ -362,7 +362,7 @@ force_base_axis = False
 # -----------------------------
 # ACHSEN DYNAMISCH
 # -----------------------------
-#layout_axes = {}
+layout_axes = {}
 
 #if use_y:
 #    layout_axes["yaxis"] = dict(
