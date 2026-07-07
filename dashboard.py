@@ -22,7 +22,7 @@ def load_geojson():
 geojson_data = load_geojson()
 
 st.set_page_config(layout="wide")
-st.title("🌊 Monitoring Truppach - Druck, Trübung und Leitfähigkeit")
+st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit")
 
 if "selected_station_map" not in st.session_state:
     st.session_state.selected_station_map = None
@@ -138,9 +138,9 @@ if st.session_state.selected_station_map:
 sel_stations = st.sidebar.multiselect("Stationen", stations, default_selection)
 sel_params = st.sidebar.multiselect("Parameter", params, params)
 
-smooth_pressure = st.sidebar.slider("Glättung Druck", 1, 200, 10)
-smooth_turbidity = st.sidebar.slider("Glättung Trübung", 1, 200, 10)
-smooth_conductivity = st.sidebar.slider("Glättung Leitfähigkeit", 1, 200, 10)
+smooth_pressure = st.sidebar.slider("Glättung Druck (N, 5-min intervals)", 1, 200, 10)
+smooth_turbidity = st.sidebar.slider("Glättung Trübung (N, 5-min intervals)", 1, 200, 10)
+smooth_conductivity = st.sidebar.slider("Glättung spez. Leitfähigkeit (N, 5-min intervals)", 1, 200, 10)
 min_gap = st.sidebar.slider("Min. Lücke (Minuten)", 1, 1000, 10)
 show_raw = st.sidebar.checkbox("Rohdaten anzeigen", False)
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", False)
@@ -148,9 +148,9 @@ show_hnd = st.sidebar.checkbox("🌊 Abfluss Plankenfels", False)
 show_bm_abfluss = st.sidebar.checkbox("🌊 Abfluss Behringersmühle", False)
 show_bm_schweb  = st.sidebar.checkbox("🟤 Schwebstoff Behringersmühle", False)
 
-scale_pressure = st.sidebar.radio("Skala Druck", ["linear", "log"], horizontal=True)
-scale_turbidity = st.sidebar.radio("Skala Trübung", ["linear", "log"], horizontal=True)
-scale_conductivity = st.sidebar.radio("Skala Leitfähigkeit", ["linear", "log"], horizontal=True)
+scale_pressure = st.sidebar.radio("Skala Druck (psi)", ["linear", "log"], horizontal=True)
+scale_turbidity = st.sidebar.radio("Skala Trübung (NTU)", ["linear", "log"], horizontal=True)
+scale_conductivity = st.sidebar.radio("Skala spez. Leitfähigkeit (µS/cm)", ["linear", "log"], horizontal=True)
 
 df = df_all[
     (df_all["station"].isin(sel_stations)) &
@@ -402,7 +402,7 @@ if use_y3:
 
 if use_y5:
     layout_axes["yaxis5"] = dict(
-        title="Leitfähigkeit (µS/cm)",
+        title="Spez. Leitfähigkeit (µS/cm)",
         overlaying="y",
         side="right",
         position=0.90,
