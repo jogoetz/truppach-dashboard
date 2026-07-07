@@ -369,7 +369,7 @@ if use_y:
         title=dict(
             "Druck (psi)",
              standoff=0
-        )
+        ),
         side="left",
         type=scale_pressure,
         position=0.00,
@@ -381,7 +381,7 @@ if use_y4:
         title=dict(
             "Schwebstoff (g/m³)",
              standoff=0
-        )
+        ),
         overlaying="y",
         side="left",
         position=0.05
@@ -392,7 +392,7 @@ if use_y2:
         title=dict(
             "Trübung (NTU)",
              standoff=0
-        )
+        ),
         overlaying="y",
         side="right",
         position=0.95,
@@ -404,7 +404,7 @@ if use_y3:
         title=dict(
             "Abfluss (m³/s)",
              standoff=0
-        )
+        ),
         overlaying="y",
         side="right",
         position=1.00
@@ -415,7 +415,7 @@ if use_y5:
         title=dict(
             "Spez. Leitfähigkeit (µS/cm)",
              standoff=0
-        )
+        ),
         overlaying="y",
         side="right",
         position=0.90,
