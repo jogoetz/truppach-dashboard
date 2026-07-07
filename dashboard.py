@@ -424,8 +424,6 @@ if use_y5:
         ),
         overlaying="y",
         side="left",
-        anchor="free",
-        autoshift=True,
         type=scale_conductivity
     )
 
