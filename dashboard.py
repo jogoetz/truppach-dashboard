@@ -368,65 +368,46 @@ layout_axes = {}
 
 if use_y:
     layout_axes["yaxis"] = dict(
-        title=dict(
-            text="Druck (psi)",
-            standoff=155    
-        ),
+        title="Druck (psi)",
         side="left",
-        anchor="free",
-        autoshift=True,
+        position=0.00,
         type=scale_pressure,
         visible=not force_base_axis
     )
 
 if use_y4:
     layout_axes["yaxis4"] = dict(
-        title=dict(
-            text="Schwebstoff (g/m³)",
-            standoff=155    
-        ),
+        title="Schwebstoff (g/m³)",
         overlaying="y",
         side="left",
-        anchor="free",
-        autoshift=True
+        position=0.04
+    )
+
+if use_y5:
+    layout_axes["yaxis5"] = dict(
+        title="Spez. Leitfähigkeit (µS/cm)",
+        overlaying="y",
+        side="left",
+        position=0.08,
+        type=scale_conductivity
     )
 
 if use_y2:
     layout_axes["yaxis2"] = dict(
-        title=dict(
-            text="Trübung (NTU)",
-            standoff=155    
-        ),
+        title="Trübung (NTU)",
         overlaying="y",
         side="right",
-        anchor="free",
-        autoshift=True,
+        position=0.92,
         type=scale_turbidity
     )
 
 if use_y3:
     layout_axes["yaxis3"] = dict(
-        title=dict(
-            text="Abfluss (m³/s)",
-            standoff=155    
-        ),
+        title="Abfluss (m³/s)",
         overlaying="y",
         side="right",
-        anchor="free",
-        autoshift=True
+        position=0.96
     )
-
-if use_y5:
-    layout_axes["yaxis5"] = dict(
-        title=dict(
-            text="Spez. Leitfähigkeit (µS/cm)",
-            standoff=155    
-        ),
-        overlaying="y",
-        side="left",
-        type=scale_conductivity
-    )
-
 # -----------------------------
 # LAYOUT
 # -----------------------------
