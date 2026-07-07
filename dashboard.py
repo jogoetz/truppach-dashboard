@@ -368,44 +368,64 @@ layout_axes = {}
 
 if use_y:
     layout_axes["yaxis"] = dict(
-        title="Druck (psi)",
+        title=dict(
+            text="Druck (psi)",
+            standoff=155    
+        ),
         side="left",
+        anchor="free",
+        autoshift=True,
         type=scale_pressure,
-        position=0.00,
         visible=not force_base_axis
     )
 
 if use_y4:
     layout_axes["yaxis4"] = dict(
-        title="Schwebstoff (g/m³)",
+        title=dict(
+            text="Schwebstoff (g/m³)",
+            standoff=155    
+        ),
         overlaying="y",
         side="left",
-        position=0.05
+        anchor="free",
+        autoshift=True
     )
 
 if use_y2:
     layout_axes["yaxis2"] = dict(
-        title="Trübung (NTU)",
+        title=dict(
+            text="Trübung (NTU)",
+            standoff=155    
+        ),
         overlaying="y",
         side="right",
-        position=0.95,
+        anchor="free",
+        autoshift=True,
         type=scale_turbidity
     )
 
 if use_y3:
     layout_axes["yaxis3"] = dict(
-        title="Abfluss (m³/s)",
+        title=dict(
+            text="Abfluss (m³/s)",
+            standoff=155    
+        ),
         overlaying="y",
         side="right",
-        position=1.0
+        anchor="free",
+        autoshift=True
     )
 
 if use_y5:
     layout_axes["yaxis5"] = dict(
-        title="Spez. Leitfähigkeit (µS/cm)",
+        title=dict(
+            text="Spez. Leitfähigkeit (µS/cm)",
+            standoff=155    
+        ),
         overlaying="y",
-        side="right",
-        position=0.90,
+        side="left",
+        anchor="free",
+        autoshift=True,
         type=scale_conductivity
     )
 
@@ -419,7 +439,7 @@ fig.update_layout(
     xaxis=dict(title="Zeit", range=[start_time, latest_time]),
     uirevision="constant",
     hovermode="x unified",
-    margin=dict(l=140, r=120),
+    margin=dict(l=180, r=180),
     **layout_axes
 )
 
