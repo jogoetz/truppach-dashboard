@@ -412,9 +412,11 @@ if use_y5:
 # -----------------------------
 # LAYOUT
 # -----------------------------
+latest_time = df_all["time"].max()
+start_time = latest_time - pd.Timedelta(days=21)
 fig.update_layout(
     height=650,
-    xaxis=dict(title="Zeit"),
+    xaxis=dict(title="Zeit", range=[start_time, latest_time]),
     uirevision="constant",
     hovermode="x unified",
     margin=dict(l=140, r=120),
