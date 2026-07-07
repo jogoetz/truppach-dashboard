@@ -407,7 +407,7 @@ if use_y3:
         ),
         overlaying="y",
         side="right",
-        position=1.00
+        position=0.10
     )
 
 if use_y5:
