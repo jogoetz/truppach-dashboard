@@ -329,7 +329,6 @@ if show_bm_schweb and df_bm is not None:
 # DUMMY TRACES (nur aktive Achsen!)
 # -----------------------------
 
-
 if not use_y and (use_y2 or use_y3 or use_y4 or use_y5):
     use_y = True
     force_base_axis = True
@@ -346,7 +345,6 @@ def add_dummy(axis):
         hoverinfo="skip",
         yaxis=axis
     ))
-
 
 if use_y or force_base_axis:
     add_dummy("y")
