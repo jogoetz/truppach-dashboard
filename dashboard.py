@@ -432,7 +432,7 @@ fig.update_layout(
     xaxis=dict(title="Zeit", range=[start_time, latest_time], domain=[0.15, 0.85]),
     uirevision="constant",
     hovermode="x unified",
-    margin=dict(l=80, r=180),
+    margin=dict(l=50, r=180),
     **layout_axes
 )
 
