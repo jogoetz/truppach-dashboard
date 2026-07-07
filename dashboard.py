@@ -414,7 +414,7 @@ latest_time = df_all["time"].max()
 start_time = latest_time - pd.Timedelta(days=21)
 fig.update_layout(
     height=650,
-    xaxis=dict(title="Zeit", range=[start_time, latest_time], domain=[0.15, 0.85]),
+    xaxis=dict(title="Zeit", range=[start_time, latest_time]),
     uirevision="constant",
     hovermode="x unified",
     margin=dict(l=80, r=180),
