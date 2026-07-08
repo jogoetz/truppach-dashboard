@@ -6,10 +6,12 @@ import io
 import folium
 from streamlit_folium import st_folium
 import json
+from datetime import datetime
 
 # -----------------------------
 # CONFIG
 # -----------------------------
+
 PARQUET_URL = "https://github.com/jogoetz/truppach-dashboard/raw/refs/heads/main/data.parquet"
 GEOJSON_URL = "https://raw.githubusercontent.com/jogoetz/truppach-dashboard/main/catchments_simpl.geojson"
 
@@ -26,6 +28,7 @@ st.set_page_config(layout="wide")
 # -----------------------------
 # PASSWORT-SCHUTZ
 # -----------------------------
+
 def check_password():
     """Gibt True zurück, wenn das Passwort korrekt ist."""
     def password_entered():
@@ -49,14 +52,13 @@ def check_password():
 if check_password():
     st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit")
 
-
-
 if "selected_station_map" not in st.session_state:
     st.session_state.selected_station_map = None
 
 # -----------------------------
 # WARTUNGSTAGE
 # -----------------------------
+
 maintenance_dates = pd.to_datetime([
     "02.07.2026","19.06.2026","03.06.2026","15.05.2026","30.04.2026","26.03.2026",
     "11.02.2026","09.02.2026","27.01.2026",
@@ -68,6 +70,7 @@ maintenance_dates = pd.to_datetime([
 # -----------------------------
 # LOAD MAIN DATA
 # -----------------------------
+
 @st.cache_data
 def load_data():
     r = requests.get(PARQUET_URL, timeout=10)
@@ -79,6 +82,7 @@ def load_data():
 # -----------------------------
 # Plankenfels
 # -----------------------------
+
 @st.cache_data(ttl=600)
 def load_hnd_abfluss():
     url = "https://www.hnd.bayern.de/pegel/oberer_main_elbe/plankenfels-24244504/tabelle?methode=abfluss&begin=01.01.2025&end={today}&setdiskr=15"
@@ -105,6 +109,7 @@ def load_hnd_abfluss():
 # -----------------------------
 # BEHRINGERSMÜHLE
 # -----------------------------
+
 @st.cache_data(ttl=600)
 def load_behringersmuehle():
 
@@ -156,6 +161,7 @@ if df_all.empty:
 # -----------------------------
 # FILTER
 # -----------------------------
+
 stations = sorted(df_all["station"].unique())
 params = sorted(df_all["parameter"].unique())
 default_selection = stations
@@ -197,6 +203,7 @@ df_bm = load_behringersmuehle() if (show_bm_abfluss or show_bm_schweb) else None
 # -----------------------------
 # HELPER
 # -----------------------------
+
 def smooth(series, window):
     return series.rolling(window, min_periods=1).mean()
 
@@ -221,6 +228,7 @@ def format_duration(start, end):
 # -----------------------------
 # PLOT
 # -----------------------------
+
 st.subheader("📈 Daten")
 fig = go.Figure()
 
@@ -257,6 +265,7 @@ color_map = {
 # -----------------------------
 # EIGENE DATEN
 # -----------------------------
+
 for (station, param), d in df.groupby(["station", "parameter"]):
     d = d.sort_values("time")
     color = color_map.get(station, "#888888")
@@ -325,7 +334,7 @@ if show_hnd:
             yaxis="y3"
         ))
 
-# Abfluss BM
+# Abfluss Behringersmühle
 if show_bm_abfluss and df_bm is not None:
     d_abf = df_bm.dropna(subset=["time", "abfluss_bm"])
     if not d_abf.empty:
@@ -338,7 +347,7 @@ if show_bm_abfluss and df_bm is not None:
             line=dict(color="black", width=2)
         ))
 
-# Schwebstoff BM
+# Schwebstoff Behringersmühle
 if show_bm_schweb and df_bm is not None:
     d_sch = df_bm.dropna(subset=["time", "schweb_bm"])
     if not d_sch.empty:
@@ -389,6 +398,7 @@ force_base_axis = False
 # -----------------------------
 # ACHSEN DYNAMISCH
 # -----------------------------
+
 layout_axes = {}
 
 if use_y:
@@ -452,6 +462,7 @@ if use_y5:
 # -----------------------------
 # LAYOUT
 # -----------------------------
+
 latest_time = df_all["time"].max()
 start_time = latest_time - pd.Timedelta(days=21)
 fig.update_layout(
@@ -482,6 +493,7 @@ map_df = pd.DataFrame([
 # -----------------------------
 # ✅ FOLIUM KARTE
 # -----------------------------
+
 st.subheader("🗺️ Messstationen und Einzugsgebiete")
 
 # Mittelpunkt
