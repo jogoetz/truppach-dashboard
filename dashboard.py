@@ -148,6 +148,7 @@ def load_behringersmuehle():
 # -----------------------------
 # RESET
 # -----------------------------
+
 if st.sidebar.button("🔄 Daten neu laden"):
     st.cache_data.clear()
     st.rerun()
@@ -191,14 +192,6 @@ df = df_all[
 ]
 
 df_bm = load_behringersmuehle() if (show_bm_abfluss or show_bm_schweb) else None
-
-#if df_bm is None or df_bm.empty:
-#    st.error("❌ BM Daten leer oder konnten nicht geladen werden!")
-
-
-#if df_bm is not None:
-#    st.write("DEBUG BM Daten:")
-#    st.write(df_bm.head(20))
 
 # -----------------------------
 # HELPER
@@ -583,6 +576,7 @@ folium.LayerControl(collapsed=False).add_to(m)
 # -----------------------------
 # ✅ LEGENDE
 # -----------------------------
+
 legend_items_stations = ""
 for station, color in color_map.items():
     legend_items_stations += f"""
@@ -648,6 +642,7 @@ if map_data and map_data.get("last_active_drawing"):
 # -----------------------------
 # EXPORT
 # -----------------------------
+
 st.subheader("⬇️ Datenexport (Rohdaten)")
 
 col1, col2, col3 = st.columns(3)
@@ -676,6 +671,7 @@ else:
 # -----------------------------
 # ✅ ZEITBLÖCKE
 # -----------------------------
+
 st.subheader("📅 Verfügbare Daten (Teilzeiträume)")
 
 def get_time_blocks(data, gap_minutes=10):
@@ -733,7 +729,6 @@ gaps = get_gaps(summary, min_gap)
 
 show_gaps = st.checkbox("Nicht verfügbare Zeiträume anzeigen", True)
 
-
 if show_gaps:
     gaps_display = gaps.copy()
 
@@ -758,7 +753,6 @@ if show_gaps:
 
     else:
         st.info("✅ Keine Datenlücken gefunden")
-
 
 else:
     summary_display = summary.copy()
