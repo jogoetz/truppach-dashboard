@@ -22,7 +22,34 @@ def load_geojson():
 geojson_data = load_geojson()
 
 st.set_page_config(layout="wide")
-st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit")
+
+# -----------------------------
+# PASSWORT-SCHUTZ
+# -----------------------------
+def check_password():
+    """Gibt True zurück, wenn das Passwort korrekt ist."""
+    def password_entered():
+        """Überprüft das eingegebene Passwort."""
+        if st.session_state["password"] == "Truppach123!":  # Ändern Sie das Passwort hier
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        st.text_input("Bitte Passwort eingeben", type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state["password_correct"]:
+        st.text_input("Bitte Passwort eingeben", type="password", on_change=password_entered, key="password")
+        st.error("❌ Falsches Passwort")
+        return False
+    else:
+        return True
+
+if check_password():
+    st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit")
+
+
 
 if "selected_station_map" not in st.session_state:
     st.session_state.selected_station_map = None
