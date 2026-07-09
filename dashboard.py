@@ -193,9 +193,12 @@ sel_params = st.sidebar.multiselect("Parameter", params, params)
 smooth_pressure = st.sidebar.slider("Glättung Druck (n, Stundenintervalle)", 1, 100, 1)
 smooth_turbidity = st.sidebar.slider("Glättung Trübung (n, Stundenintervalle)", 1, 100, 1)
 smooth_conductivity = st.sidebar.slider("Glättung Leitfähigkeit (n, Stundenintervalle)", 1, 100, 1)
-min_gap = st.sidebar.slider("Min. Lücke (Minuten) Datenverfügbarkeit", 1, 1000, 10)
+
+#min_gap = st.sidebar.slider("Min. Lücke (Minuten) Datenverfügbarkeit", 1, 1000, 10)
 #show_raw = st.sidebar.checkbox("Rohdaten anzeigen", False)
+
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", False)
+
 show_hnd = st.sidebar.checkbox("🌊 Abfluss Plankenfels", False)
 show_bm_abfluss = st.sidebar.checkbox("🌊 Abfluss Behringersmühle", False)
 show_bm_schweb  = st.sidebar.checkbox("🟤 Schwebstoff Behringersmühle", False)
@@ -203,6 +206,9 @@ show_bm_schweb  = st.sidebar.checkbox("🟤 Schwebstoff Behringersmühle", False
 scale_pressure = st.sidebar.radio("Skala Druck (psi)", ["linear", "log"], horizontal=True)
 scale_turbidity = st.sidebar.radio("Skala Trübung (NTU)", ["linear", "log"], horizontal=True)
 scale_conductivity = st.sidebar.radio("Skala spez. Leitfähigkeit (µS/cm)", ["linear", "log"], horizontal=True)
+
+min_gap = st.sidebar.slider("Min. Lücke (Minuten) Datenverfügbarkeit", 1, 1000, 10)
+
 
 df = df_all[
     (df_all["station"].isin(sel_stations)) &
