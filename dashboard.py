@@ -33,7 +33,7 @@ def check_password():
     """Gibt True zurück, wenn das Passwort korrekt ist."""
     def password_entered():
         """Überprüft das eingegebene Passwort."""
-        if st.session_state["password"] == "Truppach123!":  # Ändern Sie das Passwort hier
+        if st.session_state["password"] == st.secrets.get("password", ""):
             st.session_state["password_correct"] = True
             del st.session_state["password"]
         else:
