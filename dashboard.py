@@ -50,7 +50,7 @@ def check_password():
         return True
 
 if check_password():
-    st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit (Stundenmittel)")
+    st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit")
 
 if "selected_station_map" not in st.session_state:
     st.session_state.selected_station_map = None
@@ -235,7 +235,7 @@ def format_duration(start, end):
 # PLOT
 # -----------------------------
 
-st.subheader("📈 Daten")
+st.subheader("📈 Daten (Stundenmittel)")
 fig = go.Figure()
 
 # ✅ FLAGS
