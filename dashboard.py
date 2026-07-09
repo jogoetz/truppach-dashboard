@@ -183,9 +183,9 @@ if st.session_state.selected_station_map:
 sel_stations = st.sidebar.multiselect("Stationen", stations, default_selection)
 sel_params = st.sidebar.multiselect("Parameter", params, params)
 
-smooth_pressure = st.sidebar.slider("Glättung Druck (n, 5-Min Intervalle)", 1, 200, 10)
-smooth_turbidity = st.sidebar.slider("Glättung Trübung (n, 5-Min Intervalle)", 1, 200, 10)
-smooth_conductivity = st.sidebar.slider("Glättung Leitfähigkeit (n, 5-Min Intervalle)", 1, 200, 10)
+smooth_pressure = st.sidebar.slider("Glättung Druck (n, Stundenintervalle)", 1, 200, 1)
+smooth_turbidity = st.sidebar.slider("Glättung Trübung (n, Stundenintervalle)", 1, 200, 1)
+smooth_conductivity = st.sidebar.slider("Glättung Leitfähigkeit (n, Stundenintervalle)", 1, 200, 1)
 min_gap = st.sidebar.slider("Min. Lücke (Minuten) Datenverfügbarkeit", 1, 1000, 10)
 show_raw = st.sidebar.checkbox("Rohdaten anzeigen", False)
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", False)
@@ -271,7 +271,17 @@ color_map = {
 # -----------------------------
 
 for (station, param), d in df.groupby(["station", "parameter"]):
+
     d = d.sort_values("time")
+
+    # auf 60-Minuten-Mittelwerte reduzieren
+    d = (
+        d.set_index("time")
+         .resample("60min")
+         .mean(numeric_only=True)
+         .reset_index()
+    )
+    
     color = color_map.get(station, "#888888")
     is_pressure = "Druck" in param
     is_turbidity = "Trübung" in param
