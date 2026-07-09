@@ -50,7 +50,7 @@ def check_password():
         return True
 
 if check_password():
-    st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit")
+    st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit (Stundenmittel)")
 
 if "selected_station_map" not in st.session_state:
     st.session_state.selected_station_map = None
@@ -156,15 +156,15 @@ if st.sidebar.button("🔄 Daten neu laden"):
 
 df_all = load_data()
 
-st.write("Shape:", df_all.shape)
-st.write(
-    "RAM (MB):",
-    round(df_all.memory_usage(deep=True).sum() / 1024**2, 2)
-)
-st.write(
-    "GeoJSON-Größe (MB):",
-    round(len(json.dumps(geojson_data)) / 1024**2, 2)
-)
+#st.write("Shape:", df_all.shape)
+#st.write(
+#    "RAM (MB):",
+#    round(df_all.memory_usage(deep=True).sum() / 1024**2, 2)
+#)
+#st.write(
+#    "GeoJSON-Größe (MB):",
+#    round(len(json.dumps(geojson_data)) / 1024**2, 2)
+#)
 
 if df_all.empty:
     st.error("❌ Keine Daten gefunden")
@@ -183,11 +183,11 @@ if st.session_state.selected_station_map:
 sel_stations = st.sidebar.multiselect("Stationen", stations, default_selection)
 sel_params = st.sidebar.multiselect("Parameter", params, params)
 
-smooth_pressure = st.sidebar.slider("Glättung Druck (n, Stundenintervalle)", 1, 200, 1)
-smooth_turbidity = st.sidebar.slider("Glättung Trübung (n, Stundenintervalle)", 1, 200, 1)
-smooth_conductivity = st.sidebar.slider("Glättung Leitfähigkeit (n, Stundenintervalle)", 1, 200, 1)
+smooth_pressure = st.sidebar.slider("Glättung Druck (n, Stundenintervalle)", 1, 100, 1)
+smooth_turbidity = st.sidebar.slider("Glättung Trübung (n, Stundenintervalle)", 1, 100, 1)
+smooth_conductivity = st.sidebar.slider("Glättung Leitfähigkeit (n, Stundenintervalle)", 1, 100, 1)
 min_gap = st.sidebar.slider("Min. Lücke (Minuten) Datenverfügbarkeit", 1, 1000, 10)
-show_raw = st.sidebar.checkbox("Rohdaten anzeigen", False)
+#show_raw = st.sidebar.checkbox("Rohdaten anzeigen", False)
 show_maintenance = st.sidebar.checkbox("Wartungstage anzeigen", False)
 show_hnd = st.sidebar.checkbox("🌊 Abfluss Plankenfels", False)
 show_bm_abfluss = st.sidebar.checkbox("🌊 Abfluss Behringersmühle", False)
@@ -201,7 +201,9 @@ df = df_all[
     (df_all["station"].isin(sel_stations)) &
     (df_all["parameter"].isin(sel_params))
 ]
-st.write("Anzahl Messwerte nach Filter:", len(df))
+
+#st.write("Anzahl Messwerte nach Filter:", len(df))
+
 df_bm = load_behringersmuehle() if (show_bm_abfluss or show_bm_schweb) else None
 
 # -----------------------------
@@ -664,7 +666,7 @@ if map_data and map_data.get("last_active_drawing"):
 # EXPORT
 # -----------------------------
 
-st.subheader("⬇️ Datenexport (Rohdaten)")
+st.subheader("⬇️ Datenexport (Rohdaten, 5-minütig)")
 
 col1, col2, col3 = st.columns(3)
 
