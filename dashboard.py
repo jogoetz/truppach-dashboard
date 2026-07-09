@@ -156,6 +156,16 @@ if st.sidebar.button("🔄 Daten neu laden"):
 
 df_all = load_data()
 
+st.write("Shape:", df_all.shape)
+st.write(
+    "RAM (MB):",
+    round(df_all.memory_usage(deep=True).sum() / 1024**2, 2)
+)
+st.write(
+    "GeoJSON-Größe (MB):",
+    round(len(json.dumps(geojson_data)) / 1024**2, 2)
+)
+
 if df_all.empty:
     st.error("❌ Keine Daten gefunden")
     st.stop()
@@ -191,7 +201,7 @@ df = df_all[
     (df_all["station"].isin(sel_stations)) &
     (df_all["parameter"].isin(sel_params))
 ]
-
+st.write("Anzahl Messwerte nach Filter:", len(df))
 df_bm = load_behringersmuehle() if (show_bm_abfluss or show_bm_schweb) else None
 
 # -----------------------------
