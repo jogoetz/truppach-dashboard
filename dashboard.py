@@ -21,7 +21,7 @@ def load_geojson():
     r.raise_for_status()
     return r.json()
 
-geojson_data = load_geojson()
+#geojson_data = load_geojson()
 
 st.set_page_config(layout="wide")
 
@@ -49,8 +49,15 @@ def check_password():
     else:
         return True
 
-if check_password():
-    st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit")
+st.set_page_config(layout="wide")
+
+if not check_password():
+    st.stop()
+
+st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit")
+
+#if check_password():
+#    st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit")
 
 if "selected_station_map" not in st.session_state:
     st.session_state.selected_station_map = None
@@ -509,6 +516,8 @@ map_df = pd.DataFrame([
 # -----------------------------
 # ✅ FOLIUM KARTE
 # -----------------------------
+
+geojson_data = load_geojson()
 
 st.subheader("🗺️ Messstationen und Einzugsgebiete")
 
