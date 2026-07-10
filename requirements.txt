@@ -8,4 +8,5 @@ streamlit-plotly-events==0.0.6
 lxml==5.3.0
 html5lib==1.1
 geopandas==1.0.1
-streamlit-folium==0.22.1
+streamlit-folium==0.25.0
+#streamlit-folium==0.22.1
