@@ -668,7 +668,7 @@ m.get_root().html.add_child(folium.Element(legend_html))
 #map_data = st_folium(m)
 map_data = st_folium(
     m,
-    height=500,
+    height=700,
     returned_objects=[]
 )
 
