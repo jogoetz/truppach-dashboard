@@ -683,16 +683,37 @@ if map_data and map_data.get("last_active_drawing"):
 
 st.subheader("⬇️ Datenexport (Rohdaten, 5-minütig)")
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
     export_station = st.selectbox("Station wählen", stations)
 
 with col2:
-    start_date = st.datetime_input("Startzeit", df_all["time"].min())
+    start_day = st.date_input(
+        "Startdatum",
+        value=df_all["time"].min().date()
+    )
 
 with col3:
-    end_date = st.datetime_input("Endzeit", df_all["time"].max())
+    start_time = st.time_input(
+        "Startzeit",
+        value=df_all["time"].min().time()
+    )
+
+with col4:
+    end_day = st.date_input(
+        "Enddatum",
+        value=df_all["time"].max().date()
+    )
+
+with col5:
+    end_time = st.time_input(
+        "Endzeit",
+        value=df_all["time"].max().time()
+    )
+
+start_date = datetime.combine(start_day, start_time)
+end_date = datetime.combine(end_day, end_time)
 
 export_df = df_all[
     (df_all["station"] == export_station) &
