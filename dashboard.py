@@ -808,7 +808,7 @@ if show_gaps:
             "Station", "Parameter", "Start", "Ende", "Dauer"
         ]]
 
-        st.dataframe(gaps_display, width="stretch")
+        st.dataframe(gaps_display, use_container_width=True)
 
     else:
         st.info("✅ Keine Datenlücken gefunden")
@@ -831,5 +831,5 @@ else:
         "Station", "Parameter", "Start", "Ende", "Dauer"
     ]]
 
-    st.dataframe(summary_display, width="stretch")
+   st.dataframe(summary_display, use_container_width=True)
 
