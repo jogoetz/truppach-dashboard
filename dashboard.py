@@ -23,7 +23,7 @@ def load_geojson():
 
 #geojson_data = load_geojson()
 
-st.set_page_config(layout="wide")
+#st.set_page_config(layout="wide")
 
 # -----------------------------
 # PASSWORT-SCHUTZ
