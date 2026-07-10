@@ -54,10 +54,10 @@ st.set_page_config(layout="wide")
 if not check_password():
     st.stop()
 
-st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit")
+st.title("🌊 Monitoring Truppach")
 
 #if check_password():
-#    st.title("🌊 Monitoring Truppach - Druck, Trübung, spez. Leitfähigkeit")
+#    st.title("🌊 Monitoring Truppach")
 
 if "selected_station_map" not in st.session_state:
     st.session_state.selected_station_map = None
@@ -248,7 +248,7 @@ def format_duration(start, end):
 # PLOT
 # -----------------------------
 
-st.subheader("📈 Daten (Stundenmittel)")
+st.subheader("📈 Daten: Druck, Trübung, spez. Leitfähigkeit (Stundenmittel)")
 fig = go.Figure()
 
 # ✅ FLAGS
