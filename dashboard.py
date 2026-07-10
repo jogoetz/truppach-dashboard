@@ -664,7 +664,8 @@ line-height: 1.5;
 m.get_root().html.add_child(folium.Element(legend_html))
 
 # ✅ Anzeige
-map_data = st_folium(m, height=700, use_container_width=True)
+#map_data = st_folium(m, height=700, use_container_width=True)
+map_data = st_folium(m, height=700, width=None)
 
 #st.write(map_data)
 
