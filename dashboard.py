@@ -831,5 +831,5 @@ else:
         "Station", "Parameter", "Start", "Ende", "Dauer"
     ]]
 
-   st.dataframe(summary_display, use_container_width=True)
+    st.dataframe(summary_display, use_container_width=True)
 
