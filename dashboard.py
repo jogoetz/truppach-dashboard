@@ -51,8 +51,8 @@ def check_password():
 
 st.set_page_config(layout="wide")
 
-#if not check_password():
-#    st.stop()
+if not check_password():
+    st.stop()
 
 st.title("🌊 Monitoring Truppach")
 
