@@ -35,7 +35,7 @@ def check_password():
         """Überprüft das eingegebene Passwort."""
         if st.session_state["password"] == st.secrets.get("password", ""):
             st.session_state["password_correct"] = True
-            del st.session_state["password"]
+       #     del st.session_state["password"]
         else:
             st.session_state["password_correct"] = False
 
