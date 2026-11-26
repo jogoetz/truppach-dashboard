@@ -130,17 +130,27 @@ def load_behringersmuehle():
 
     url = f"https://www.gkd.bayern.de/de/fluesse/schwebstoff/regnitz/behringersmuehle-24241710/gesamtzeitraum/tabelle?zr=gesamt&parameter=konzentration&parameterNr=14&beginn=01.01.2025&ende={today}"
     
-    try:
-        tables = pd.read_html(
-            url,
-            flavor="bs4",
-            decimal=",",
-            thousands=None
-        )
-        
-    except Exception as e:
-        st.error(f"Fehler beim Einlesen Behringersmühle: {e}")
-        return pd.DataFrame()
+try:
+    import requests
+
+    r = requests.get(
+        url,
+        headers={"User-Agent": "Mozilla/5.0"}
+    )
+
+    st.write("Status:", r.status_code)
+    st.write(r.text[:2000])
+
+    tables = pd.read_html(
+        r.text,
+        flavor="bs4",
+        decimal=",",
+        thousands=None
+    )
+
+except Exception as e:
+    st.error(f"Fehler beim Einlesen Behringersmühle: {e}")
+    return pd.DataFrame()
 
     if not tables:
         return pd.DataFrame()
