@@ -141,6 +141,11 @@ def load_behringersmuehle():
 
     df = max(tables, key=lambda x: x.shape[0])
 
+    st.write("Ausgewählte Tabelle:")
+    st.write("Shape:", df.shape)
+    st.write("Spalten:", df.columns.tolist())
+    st.write(df.head())
+
     # ✅ nur relevante Spalten
     df = df.iloc[:, :3]
     df.columns = ["time", "schweb_bm", "abfluss_bm"]
