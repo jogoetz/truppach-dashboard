@@ -121,6 +121,10 @@ def load_hnd_abfluss():
 # BEHRINGERSMÜHLE
 # -----------------------------
 
+from datetime import date
+
+today = date.today().strftime("%d.%m.%Y")
+
 @st.cache_data(ttl=600)
 def load_behringersmuehle():
 
