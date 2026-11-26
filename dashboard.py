@@ -137,8 +137,10 @@ def load_behringersmuehle():
             decimal=",",
             thousands=None
         )
-    except Exception:
-        return pd.DataFrame()
+        
+    except Exception as e:
+    st.error(f"Fehler beim Einlesen Behringersmühle: {e}")
+    return pd.DataFrame()
 
     if not tables:
         return pd.DataFrame()
