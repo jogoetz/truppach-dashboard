@@ -372,26 +372,17 @@ if show_hnd:
         ))
 
 # Abfluss Behringersmühle
-#if show_bm_abfluss and df_bm is not None:
-    #d_abf = df_bm.dropna(subset=["time", "abfluss_bm"])
-    #if not d_abf.empty:
-    #    use_y3 = True
-    #    fig.add_trace(go.Scatter(
-    #        x=d_abf["time"],
-    #        y=d_abf["abfluss_bm"],
-    #        name="Abfluss Behringersmühle",
-    #        yaxis="y3",
-    #        line=dict(color="black", width=2)
-    #    ))
-
-if (
-    df_bm is not None
-    and "time" in df_bm.columns
-    and "abfluss_bm" in df_bm.columns
-):
+if show_bm_abfluss and df_bm is not None:
     d_abf = df_bm.dropna(subset=["time", "abfluss_bm"])
-else:
-    st.error(f"df_bm enthält diese Spalten: {list(df_bm.columns) if df_bm is not None else 'None'}")
+    if not d_abf.empty:
+        use_y3 = True
+        fig.add_trace(go.Scatter(
+            x=d_abf["time"],
+            y=d_abf["abfluss_bm"],
+            name="Abfluss Behringersmühle",
+            yaxis="y3",
+            line=dict(color="black", width=2)
+        ))
 
 # Schwebstoff Behringersmühle
 if show_bm_schweb and df_bm is not None:
