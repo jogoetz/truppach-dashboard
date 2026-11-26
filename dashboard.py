@@ -139,8 +139,8 @@ def load_behringersmuehle():
         )
         
     except Exception as e:
-    st.error(f"Fehler beim Einlesen Behringersmühle: {e}")
-    return pd.DataFrame()
+        st.error(f"Fehler beim Einlesen Behringersmühle: {e}")
+        return pd.DataFrame()
 
     if not tables:
         return pd.DataFrame()
